@@ -44,6 +44,19 @@ test("slugifies a heading that declares no anchor", async () => {
   );
 });
 
+test("title preserves inline markdown; only the slug strips it", async () => {
+  const sections = parseSections("f.md", await fixture("no-anchors.md"));
+  assert.deepEqual(
+    sections.map((s) => s.title),
+    [
+      "Getting Started",
+      "Using `Depends()`, *carefully*",
+      "Using `Depends()`, *carefully*",
+      "Read the [docs](https://example.com)!",
+    ],
+  );
+});
+
 test("slugify strips punctuation and lowercases", () => {
   assert.equal(slugify("Using `Depends()`, *carefully*", new Set()), "using-depends-carefully");
 });

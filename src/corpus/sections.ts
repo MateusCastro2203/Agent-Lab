@@ -8,6 +8,9 @@ export interface Section {
   id: string;
   path: string;
   slug: string;
+  // Heading text with the declared anchor block stripped; inline markdown is
+  // deliberately preserved (it's shown to humans via `npm run sections`,
+  // where the formatting is a useful signal). Only `slugify` strips markdown.
   title: string;
   level: number;
   url: string;
