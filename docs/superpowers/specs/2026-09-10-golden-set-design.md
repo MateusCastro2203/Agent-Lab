@@ -21,7 +21,7 @@ vendored first, section identity is defined mechanically, and only then are ques
 | Decision | Choice | Reason |
 | --- | --- | --- |
 | Corpus source | Vendored into the repo, pinned | A fresh checkout reproduces the exact recall@5 |
-| Section identity | `relpath#slug`, public URL as separate metadata | Mechanically derivable from files; verifiable by grep |
+| Section identity | `relpath#anchor`, anchor read from the file's own `{ #… }`, public URL as separate metadata | No slugify rule to keep in sync with upstream; verifiable by grep |
 | Label mix | 10 `how_to` / 10 `concept` / 10 `out_of_scope` | Per-class accuracy equally readable across all three |
 | Correct answer | `sections` list, hit if any member is in the top 5 | Docs sometimes split one answer across headings |
 | Authoring method | Hand-authored in user voice | Reverse-generating questions from section text inflates recall@5 via lexical overlap |
@@ -50,9 +50,14 @@ Sparse-checkout `fastapi/fastapi` at a pinned release tag and copy these subpath
 - `how-to/`
 - `deployment/`
 
-The implementation resolves the latest stable tag at vendoring time and records both the tag and the
-full commit SHA in `corpus/SOURCE.md`, alongside the copied subpaths and the upstream MIT license
-attribution. The markdown is committed to git.
+Pinned at tag `0.141.1`, commit `95f8322ee1dcda7ceace7b1c4f6c9915b36d748f` (resolved
+2026-09-10 via `git ls-remote`). `corpus/SOURCE.md` records the tag, the full SHA, the copied
+subpaths, and the upstream MIT license attribution. The markdown is committed to git.
+
+One content caveat, recorded here but out of scope for this chunk: these files use MkDocs-Material
+include directives (`{* ../../docs_src/… *}`) in place of inline code samples, so a section's body
+text references code it does not contain. That affects the ingest pipeline's chunk content, not
+section *identity*, which is all this chunk needs.
 
 Nothing else from the upstream repository enters this one — no source tree, no submodule, no
 build config.
@@ -68,16 +73,36 @@ higher level. Its identifier is:
 
 Example: `tutorial/query-params.md#optional-parameters`
 
-The slug rule must match python-markdown's `toc` extension, because that is what generates the
-anchors on the public documentation site — and the public URL is what an answer cites. The rule:
+### Anchors are declared, not derived
 
-1. Strip inline markdown from the heading text (backticks, emphasis, links keep their label).
-2. Lowercase.
-3. Replace whitespace runs with a single hyphen.
-4. Drop every character that is not alphanumeric, hyphen, or underscore.
-5. On a collision within one file, append `_1`, `_2`, … in document order.
+The FastAPI documentation declares its anchors inline, using the `attr_list` custom-id syntax:
 
-`enumerateSections()` returns, for each section: `{ id, path, slug, title, level, url }`.
+```markdown
+## Optional parameters { #optional-parameters }
+```
+
+Every real heading in the vendored slice carries one (verified: 37/37 in `deployment/docker.md`,
+27/27 in `tutorial/first-steps.md`). So the slug is **read, not computed** — the anchor in the file
+is the same anchor the public site serves, with no slugify rule to keep in sync.
+
+A slugify fallback exists only for a heading that declares no anchor: strip inline markdown,
+lowercase, whitespace runs to a single hyphen, drop everything that is not alphanumeric / hyphen /
+underscore, and on a within-file collision append `_1`, `_2`, … in document order. The validator
+reports every heading that falls back, because upstream adding an un-anchored heading is a signal
+worth seeing rather than silently absorbing.
+
+### Fenced code blocks are not headings
+
+`deployment/docker.md` contains Dockerfile and shell listings whose comments begin with `#`. A naive
+`^#{1,6} ` match finds 50 headings in that file; only 37 are real. The parser tracks fence state —
+opened by three or more backticks or tildes, closed by a fence of at least the same length and the
+same character — and ignores every line inside. Getting this wrong puts section ids in the golden
+set that no retrieval can ever return.
+
+### Return shape
+
+`enumerateSections()` returns, for each section: `{ id, path, slug, title, level, url, anchorSource }`,
+where `anchorSource` is `"declared"` or `"slugified"`.
 
 The public URL is derived from the path by dropping the `.md` extension, collapsing `index.md` to
 its directory, and appending a trailing slash, then the anchor:
@@ -148,6 +173,7 @@ answers them anyway.
 `npm run validate:golden` exits non-zero on any of:
 
 - a `sections` entry that `enumerateSections()` does not produce
+- a section whose anchor was slugified rather than declared (reported, non-fatal)
 - a `type` outside the three allowed values
 - a duplicate `id`, or an `id` not matching `q\d{3}`
 - two `question` values that collide after normalization (lowercase, punctuation stripped,
@@ -161,8 +187,14 @@ answers them anyway.
 
 ## Testing
 
-- Unit tests on `enumerateSections()` covering the slug rule: punctuation in headings, inline code
-  ticks, emphasis, links, duplicate headings within one file, and nested heading levels.
+- Unit tests on `enumerateSections()`, against hand-written fixture files rather than the real
+  corpus, covering: a declared `{ #anchor }`; `#`-prefixed comments inside ``` and ~~~ fences
+  (must not become sections); a longer fence closing over a shorter one; nested heading levels;
+  and the slugify fallback's punctuation, inline code ticks, emphasis, links, and within-file
+  collision suffixes.
+- One test against the real corpus asserting that a known section id
+  (`tutorial/query-params.md#optional-parameters`) is produced, so fixtures cannot drift from
+  reality unnoticed.
 - Unit tests on URL derivation, including `index.md` collapsing.
 - The validator runs as part of the test suite, so a golden row can never reference a section that
   the corpus does not contain.
