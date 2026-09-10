@@ -27,4 +27,4 @@
 {"id":"q027","question":"Which country won the 2018 football World Cup?","type":"out_of_scope","sections":[],"note":"off-domain: general knowledge"}
 {"id":"q028","question":"What changed in the FastAPI 0.100 release?","type":"out_of_scope","sections":[],"note":"in-domain, outside the vendored slice: release notes were not vendored"}
 {"id":"q029","question":"What is the complete list of keyword arguments `APIRouter()` accepts?","type":"out_of_scope","sections":[],"note":"in-domain, outside the vendored slice: the API reference was not vendored"}
-{"id":"q030","question":"Who maintains FastAPI, and how can a company sponsor it?","type":"out_of_scope","sections":[],"note":"in-domain, outside the vendored slice: project meta pages were not vendored"}
+{"id":"q030","question":"How do I submit a pull request to the FastAPI project?","type":"out_of_scope","sections":[],"note":"in-domain, outside the vendored slice: the contributing and development guide was not vendored"}

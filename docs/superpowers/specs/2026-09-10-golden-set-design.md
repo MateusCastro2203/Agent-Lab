@@ -64,14 +64,41 @@ build config.
 
 ## Section identity
 
-A section is a markdown heading plus the prose beneath it, up to the next heading of the same or
-higher level. Its identifier is:
+A section is a markdown heading plus the prose beneath it, up to **the next heading of any level**.
+Its identifier is:
 
 ```
 <path relative to corpus/>#<slug of the heading text>
 ```
 
 Example: `tutorial/query-params.md#optional-parameters`
+
+#### Sections never nest
+
+"To the next heading of any level" — rather than the next heading of the same or higher level — is
+deliberate, and it is what keeps sections a flat partition of each file: every line of prose belongs
+to exactly one section, and no section contains another.
+
+The alternative rule reads more naturally but breaks the metric. Every one of the 106 vendored files
+has exactly one H1, so under a same-or-higher-level rule a level-1 section would span its entire
+file. Two consequences follow, both fatal to recall@5:
+
+- Sections would overlap at different granularities. `tutorial/body.md#request-body` (the H1) would
+  *contain* `tutorial/body.md#results`, so q003's correct answer would swallow q018's — one row's
+  gold section becoming another row's distractor, with no way for retrieval to be right about both.
+- A retrieved "section" could be a whole page, which is not a unit anyone can cite.
+
+Under the flat rule an **H1 section is the page's introductory prose only** — the text between the
+title and the first `##`. That is intended, not an accident of parsing. Eight of the twenty in-scope
+golden rows (q002, q003, q004, q005, q006, q008, q011, q020) target exactly such an introductory
+section, because on those pages the introduction is where the answer is actually stated: it carries
+the mechanism and the motivation, while the `##` sections beneath it walk through construction steps
+that presuppose the answer. Those rows are correctly aimed and must not be re-pointed at
+subheadings.
+
+This is a decision recorded for the ingest pipeline, which will be the first consumer to need a
+section's *body*. It requires no change to `enumerateSections()`, which computes identity only and
+never extent.
 
 ### Anchors are declared, not derived
 
@@ -207,8 +234,29 @@ answers them anyway.
   appears in the top 5 retrieved sections. `out_of_scope` rows are excluded, because there is no
   correct section to retrieve.
 
-Both numbers are also reported per class, so a regression in one label is visible rather than
-averaged away.
+**Classification accuracy** is also reported per class, so a regression in one label is visible
+rather than averaged away. All three classes hold 10 rows, which makes the three numbers directly
+comparable, but 10 rows is coarse: one row is 10pp.
+
+**recall@5 is reported as a single number only.** An earlier draft of this spec promised it per
+class as well; that is withdrawn. Per class it would rest on 10 rows (SE ≈ 15pp), which cannot
+resolve less than roughly a 30pp swing — so a per-class recall@5 would mostly publish noise in a
+shape that invites reading it as a per-label regression.
+
+### Resolution and coverage
+
+Two limits of the instrument, recorded here and stated in the README so neither is discovered by
+someone tuning against a rounding error.
+
+- **Resolution.** recall@5 has n=20, so one row is 5pp and the standard error is around 10pp;
+  classification accuracy has n=30 and moves 3.3pp per row. Differences below about 15pp are noise.
+  No tuning decision may be justified by a smaller movement than that.
+- **Coverage.** The 20 in-scope gold sections are distributed `tutorial` 17, `advanced` 2,
+  `deployment` 1, `how-to` 0, against a corpus in which `advanced/` holds 252 of 944 sections and
+  `how-to/` 78. About 35% of the corpus is therefore distractor-only, and a retrieval regression
+  confined to those subtrees would be invisible in recall@5. Widening coverage means authoring
+  rows that land in `advanced/` and `how-to/` — a change to the golden set, not to the runner, and
+  one that must respect the 10/10/10 mix.
 
 ## Not in this chunk
 

@@ -19,6 +19,19 @@ test("parses a well-formed row and records its line number", () => {
   assert.equal(row.line, 7);
 });
 
+// The key must be ABSENT, not merely undefined — the schema says url is "absent on
+// out_of_scope rows". Nothing else in the suite pins that: validate.ts's
+// out-of-scope-has-url rule tests the value (`row.url !== undefined`), not the key,
+// so relaxing golden.ts's conditional spread to a plain `url: o.url` slips past every
+// other test while making a JSON round-trip of a row emit `"url": null`.
+test("omits the url key entirely when the line carries no url", () => {
+  const { url, ...noUrl } = JSON.parse(validLine) as Record<string, unknown>;
+  const row = parseGoldenLine(JSON.stringify(noUrl), 1);
+  assert.equal(Object.hasOwn(row, "url"), false, `url key leaked in: ${Object.keys(row).join(", ")}`);
+  assert.ok(!("url" in row));
+  assert.ok(Object.hasOwn(parseGoldenLine(validLine, 1), "url"));
+});
+
 test("rejects malformed JSON with the line number", () => {
   assert.throws(() => parseGoldenLine("{nope", 3), /line 3/);
 });
