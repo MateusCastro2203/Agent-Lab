@@ -26,11 +26,31 @@ points at.
 
 Two numbers, defined before tuning any prompt:
 
-- **Classification accuracy** — did it get the question type right?
-- **recall@5** — did the correct section appear in the top 5 retrieved?
+The golden set is 30 questions in `evals/golden.jsonl` — 10 `how_to`, 10 `concept`, 10
+`out_of_scope` — each with its expected type and, when in scope, the documentation section that
+answers it. Sections are identified as `<path>#<anchor>`, where the anchor is the one the FastAPI
+docs already declare in the heading.
 
-The golden set is ~30 questions in `evals/golden.jsonl`, each with its expected type and the section
-that answers it. `npm run eval` runs them all and prints both numbers.
+- **Classification accuracy** is measured over all 30 rows.
+- **recall@5** is measured over the 20 in-scope rows only; an `out_of_scope` row has no correct
+  section to retrieve.
+
+`npm run validate:golden` proves every row points at a section that exists. `npm run eval` will run
+the questions and print both numbers — that arrives with the next chunk.
+
+### Known limits of the corpus
+
+Only `tutorial/`, `advanced/`, `how-to/` and `deployment/` were vendored, so a few FastAPI topics
+have no home in the corpus. The clearest case is `async.md`, which owns the "what does `async def`
+change?" question upstream and lives at the docs root: it is absent here, and two vendored pages
+carry dead links to it. Question `q013` is answered instead from a file-streaming section that
+happens to state the mechanism in prose. Expect it to be one of the harder rows, and read a failure
+there as a corpus boundary rather than a retriever regression.
+
+The vendored pages also pull their code samples in through MkDocs include directives
+(`{* ../../docs_src/… *}`) instead of inlining them, and `docs_src/` was not vendored. Retrieval
+therefore matches prose, not code — which is worth remembering when a section that "obviously"
+contains the answer scores badly.
 
 ### Results
 
@@ -46,18 +66,22 @@ OpenRouter when a stronger model is needed.
 ## Running it
 
 ```bash
-docker compose up -d     # Postgres
-npm run ingest           # index the docs
-npm run ask "..."        # ask a question
-npm run eval             # run the golden set
+docker compose up -d      # Postgres (not used until the ingest chunk)
+npm install
+npm run corpus:fetch      # re-vendor the pinned FastAPI docs (already committed)
+npm run sections          # list every section id
+npm run validate:golden   # check the golden set against the corpus
+npm test
 ```
 
-Configuration lives in `.env`: `DATABASE_URL`, `AGENT_MODEL`, `JUDGE_MODEL`, `OPENROUTER_API_KEY`.
+None of the commands above touch it yet, but configuration for the ingest/ask/eval chunk already
+lives in `.env`: `DATABASE_URL`, `AGENT_MODEL`, `JUDGE_MODEL`, `OPENROUTER_API_KEY`.
 
 ## Roadmap
 
 Each item lands only once the previous one runs and is measured:
 
+- [x] corpus vendored, section identity, golden set + validator
 - [ ] v1: three nodes + two numbers
 - [ ] critic node (reviews the answer before it ships)
 - [ ] `interrupt()` for ambiguous questions

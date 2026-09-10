@@ -8,7 +8,7 @@
     "test": "node --test",
     "corpus:fetch": "bash scripts/fetch-corpus.sh",
     "sections": "node scripts/list-sections.ts",
-    "validate:golden": "node scripts/validate-golden.ts"
+    "validate:golden": "node scripts/validate-golden.ts --final"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
