@@ -6,7 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test",
-    "corpus:fetch": "bash scripts/fetch-corpus.sh"
+    "corpus:fetch": "bash scripts/fetch-corpus.sh",
+    "sections": "node scripts/list-sections.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
