@@ -7,7 +7,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test",
     "corpus:fetch": "bash scripts/fetch-corpus.sh",
-    "sections": "node scripts/list-sections.ts"
+    "sections": "node scripts/list-sections.ts",
+    "validate:golden": "node scripts/validate-golden.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

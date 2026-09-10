@@ -1,0 +1,1 @@
+{"id":"q001","question":"How do I make a query parameter optional?","type":"how_to","sections":["tutorial/query-params.md#optional-parameters"],"url":"https://fastapi.tiangolo.com/tutorial/query-params/#optional-parameters","note":"chosen over query-params-str-validations, which covers validation rather than optionality"}
