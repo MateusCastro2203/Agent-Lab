@@ -17,7 +17,14 @@ test("toVectorLiteral produces the format pgvector parses", () => {
   v[0] = 0.1;
   v[1] = -0.2;
   v[2] = 3;
-  assert.equal(toVectorLiteral(v), JSON.stringify(v));
+  // Checked independently of the implementation — this would fail if
+  // toVectorLiteral ever stopped emitting the bracketed, comma-separated,
+  // no-space literal pgvector's parser expects.
+  const literal = toVectorLiteral(v);
+  assert.ok(literal.startsWith("[0.1,-0.2,3,"), literal.slice(0, 40));
+  assert.ok(literal.endsWith("]"));
+  assert.equal(literal.split(",").length, EMBEDDING_DIM);
+  assert.doesNotMatch(literal, / /); // pgvector rejects spaces in the literal
 });
 
 test("toVectorLiteral rejects the wrong dimension", () => {
