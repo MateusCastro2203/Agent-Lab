@@ -115,7 +115,7 @@ cp .env.example .env      # optional; the scripts fall back to the same defaults
 docker compose up -d      # Postgres + pgvector
 docker compose ps         # wait for db to read "healthy"
 npm run db:setup          # apply db/schema.sql (idempotent)
-npm run db:check          # confirm extension, table, row counts
+npm run db:check          # confirm extension, table, row counts, schema fingerprint
 
 npm run corpus:fetch      # re-vendor the pinned FastAPI docs (already committed)
 npm run sections          # list every section id
@@ -124,7 +124,16 @@ npm test
 ```
 
 The corpus and golden-set commands need no database and no configuration — only the `db:*` commands
-do. `.env` is gitignored; `.env.example` is committed and holds the same defaults the scripts use
+do.
+
+**Changing the schema.** Every statement in `db/schema.sql` is `IF NOT EXISTS`, which makes
+`db:setup` safe to re-run but also means an edit to that file is silently ignored once the objects
+exist — adding a column and re-running would change nothing. So `db:setup` records a fingerprint of
+the schema and `db:check` fails loudly when the file no longer matches what was applied, rather than
+reporting OK over a stale table. Reapply from scratch with `npm run db:reset -- --force`, which
+drops the tables and tells you how many embedded rows it would discard; without the flag it refuses.
+The fingerprint ignores comments and whitespace, so editing the file's prose raises no false
+alarm. `.env` is gitignored; `.env.example` is committed and holds the same defaults the scripts use
 when it is absent, so a fresh checkout works without it. `DATABASE_URL` and `OLLAMA_URL` are live
 today; `AGENT_MODEL`, `JUDGE_MODEL` and `OPENROUTER_API_KEY` arrive with the chunk that first needs
 a generating model.

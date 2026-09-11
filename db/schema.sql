@@ -1,7 +1,29 @@
 -- Agent-Lab schema. Idempotent: safe to re-run without dropping the volume.
 -- Applied by `npm run db:setup`.
+--
+-- IMPORTANT — how schema changes work here.
+--
+-- Every statement below is `IF NOT EXISTS`, which makes re-running harmless but
+-- also means an edit to this file is SILENTLY IGNORED once the objects exist:
+-- adding a column here and re-running `db:setup` changes nothing, and `db:check`
+-- would still report OK. That was verified, not assumed.
+--
+-- So `db:setup` records a fingerprint of this file in `schema_meta`, and
+-- `db:check` fails loudly when the file no longer matches what was applied. The
+-- fix is `npm run db:reset --force`, which drops these tables and reapplies —
+-- destroying stored embeddings, which then cost a re-ingest to rebuild.
+--
+-- The fingerprint ignores comments and whitespace, so editing this prose does
+-- not raise a false alarm.
 
 CREATE EXTENSION IF NOT EXISTS vector;
+
+-- One row, holding the fingerprint of the schema that was last applied.
+CREATE TABLE IF NOT EXISTS schema_meta (
+  id         int PRIMARY KEY CHECK (id = 1),
+  hash       text NOT NULL,
+  applied_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- One row per corpus section. `id` is the section id that `enumerateSections()`
 -- produces and that a golden row's `sections` entry names, so a retrieval

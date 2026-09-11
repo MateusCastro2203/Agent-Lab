@@ -10,6 +10,7 @@
     "test": "node --test",
     "db:setup": "node --env-file-if-exists=.env scripts/db.ts setup",
     "db:check": "node --env-file-if-exists=.env scripts/db.ts check",
+    "db:reset": "node --env-file-if-exists=.env scripts/db.ts reset",
     "corpus:fetch": "bash scripts/fetch-corpus.sh",
     "sections": "node scripts/list-sections.ts",
     "validate:golden": "node scripts/validate-golden.ts --final"
