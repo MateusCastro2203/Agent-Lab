@@ -1,0 +1,17 @@
+{
+  "name": "agent-lab",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "corpus:fetch": "bash scripts/fetch-corpus.sh",
+    "sections": "node scripts/list-sections.ts",
+    "validate:golden": "node scripts/validate-golden.ts --final"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^24.0.0"
+  }
+}
