@@ -28,10 +28,12 @@ export function batch<T>(items: T[], size: number): T[][] {
   return groups;
 }
 
+export class DimensionMismatchError extends Error {}
+
 export function assertDimensions(vectors: number[][]): void {
   for (const [index, vector] of vectors.entries()) {
     if (vector.length !== EMBEDDING_DIM) {
-      throw new Error(
+      throw new DimensionMismatchError(
         `embedding at index ${index} has ${vector.length} dimensions, expected ${EMBEDDING_DIM}` +
           ` — the chunks.embedding column is vector(${EMBEDDING_DIM}), so this would not store`,
       );
@@ -45,12 +47,13 @@ export interface Embedder {
   embedQuery(text: string): Promise<number[]>;
 }
 
-function unreachable(error: unknown): never {
+function handleEmbedFailure(error: unknown): never {
+  if (error instanceof DimensionMismatchError) throw error;
   const reason = error instanceof Error ? error.message : String(error);
   console.error(
-    `Cannot reach Ollama at ${ollamaUrl()}\n` +
+    `Embedding failed against ${ollamaUrl()}\n` +
       `  ${reason}\n\n` +
-      `Is it running? Start it and pull the model:\n` +
+      `If Ollama is not running, start it and make sure the model is pulled:\n` +
       `  ollama serve\n` +
       `  ollama pull ${EMBEDDING_MODEL}\n`,
   );
@@ -77,8 +80,7 @@ export function ollamaEmbedder(): Embedder {
           assertDimensions(embeddings);
           out.push(...embeddings);
         } catch (error) {
-          if (error instanceof Error && /dimensions, expected/.test(error.message)) throw error;
-          unreachable(error);
+          handleEmbedFailure(error);
         }
       }
       return out;
@@ -90,8 +92,7 @@ export function ollamaEmbedder(): Embedder {
         assertDimensions([embedding]);
         return embedding;
       } catch (error) {
-        if (error instanceof Error && /dimensions, expected/.test(error.message)) throw error;
-        unreachable(error);
+        handleEmbedFailure(error);
       }
     },
   };

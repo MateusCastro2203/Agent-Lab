@@ -4,6 +4,7 @@ import {
   assertDimensions,
   batch,
   BATCH_SIZE,
+  DimensionMismatchError,
   DOCUMENT_PREFIX,
   EMBEDDING_DIM,
   ollamaUrl,
@@ -34,6 +35,11 @@ test("assertDimensions accepts correctly sized vectors", () => {
 test("assertDimensions names the offending index", () => {
   const bad = [new Array<number>(EMBEDDING_DIM).fill(0), new Array<number>(3).fill(0)];
   assert.throws(() => assertDimensions(bad), /index 1 .*3 .*768/);
+});
+
+test("assertDimensions throws a DimensionMismatchError specifically", () => {
+  const bad = [new Array<number>(3).fill(0)];
+  assert.throws(() => assertDimensions(bad), DimensionMismatchError);
 });
 
 test("ollamaUrl prefers OLLAMA_URL and falls back to the local default", () => {
