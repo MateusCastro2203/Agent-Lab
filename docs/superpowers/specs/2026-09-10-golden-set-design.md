@@ -181,6 +181,81 @@ by the validator.
 4. **`how_to` vs `concept`.** `how_to` asks for steps or syntax to accomplish a task. `concept` asks
    what something is, why it exists, or how it behaves. When a question reads as both, it is
    rewritten until it reads as one.
+5. **Adjudicate against the whole file, and against prose only.** Added 2026-09-11, after the first
+   measurement (see *Amendment* below). Locating a section that answers the question is not enough.
+   Two further checks, both on every in-scope row:
+   - **Uniqueness.** List *every* section of the file the chosen one lives in and ask of each: does
+     this one also answer the question? "Also answers" means answers the question **whole** — a
+     section that supplies one instance of the answer is not a rival. (`path-params#data-validation`
+     gives one of the four things type hints buy you; it does not answer "why does FastAPI care
+     about type hints at all", which `#recap` does.) Without that qualifier almost every row has a
+     rival and the rule is unusable. If more than one section answers the whole question, the defect
+     is in the **question**, not in the choice — rewrite it until exactly one section answers, or
+     drop the ambiguous clause. A question with two defensible answers cannot be scored: whichever
+     section is recorded, a correct retrieval of the other counts as a miss. Where the documentation
+     genuinely splits one answer across two headings and no rewrite separates them, rule 3 applies
+     instead: record both, and justify the second in the `note`.
+   - **Prose, not includes.** The answer must be stated in the section's own prose. The vendored
+     pages pull their code in through MkDocs include directives (`{* ../../docs_src/… *}`) and
+     `docs_src/` is not vendored, so an answer that lives only in the included code is not present
+     in the text that gets embedded. A section whose relevant content is a code include answers the
+     question for a human reader of the website and not at all for this corpus.
+6. **Comparison questions are checked across files.** Rule 5 scopes its uniqueness check to one
+   file, which is enough for a question about one thing and blind to a question about the
+   relationship between two. A question of the form "the difference between A and B", "what does A
+   do that B does not", or "A compared with B" has, by construction, a defensible answer wherever
+   *either* side is documented. For those, run the uniqueness check over the file of each side. If
+   both sides are documented in their own file and neither subsumes the other, record both sections
+   under rule 3 rather than picking one and scoring a correct retrieval of the other as a miss.
+
+## Amendment — 2026-09-11
+
+Rule 5 was added after chunk 2b produced the first `recall@5`. Triaging its eight misses showed that
+rules 1-4 admit three distinct defects, all three present in the committed set:
+
+| Row | Defect | Evidence |
+| --- | --- | --- |
+| `q009` | Gold section states the answer only in a code include | Its entire prose on the topic is *"you could use this to create a database session and close it after finishing"*; the mechanism is in three `{* … *}` directives |
+| `q014` | Question has two clauses answered by two different sections | *"…and why not just call the function myself?"* is answered by `dependencies/index#simple-usage`, not by the recorded gold |
+| `q015` | Question ambiguous; two sections defensibly answer it | *"where does it come from"* admits both the renderer (`#interactive-api-docs`, "provided by Swagger UI") and the content's origin (`#what-is-openapi-for`, "the OpenAPI schema is what powers…") |
+
+None of these is a retrieval failure, and no validator rule can detect any of them — each requires
+reading the sibling sections of the file. The rule costs roughly two minutes per row at authoring
+time and would have caught all three.
+
+The measurement that exposed them, `recall@5 = 0.60 (12/20)`, was therefore taken against an
+instrument with three known defects. It stays in the results table, labelled as such: a baseline
+that is discarded rather than recorded is a baseline that can be quietly re-chosen later.
+
+### Re-audit of all twenty in-scope rows
+
+Rules 5 and 6 were then applied to every in-scope row, not only the eight that missed — roughly
+eighty-five sibling sections read. Fourteen rows passed. Four more rows were found defective, none
+of them by the retrieval score:
+
+| Row | Rival section | Why no rewrite separates them |
+| --- | --- | --- |
+| `q005` | `request-files#define-file-parameters` | The H1 names the mechanism (`File`); the sibling carries the substance (`bytes` versus `UploadFile`, and what each costs). Both answer "how do I accept an uploaded file". |
+| `q006` | `request-forms#define-form-parameters` | Same split: the H1 names `Form`, the sibling gives the configuration and the OAuth2 case. |
+| `q007` | `response-cookies#return-a-response-directly` | Two genuine mechanisms for one task — a `Response` parameter, or building the response yourself. |
+| `q011` | `path-params#path-parameters` (another file) | Found by rule 6, not rule 5. "The difference between a path parameter and a query parameter" is answered wherever either side is defined. |
+
+All four take a second section under rule 3 rather than a rewritten question. The four rows already
+scored as hits before the change (ranks 1, 3, 1 and 2), and `hit` is `goldRank <= k` over
+`Math.min(...ranks)`, so **adding a section cannot move them**. Their score staying put is the check
+that the change added targets without buying points.
+
+Three findings about the method itself, recorded because they cost more than the rows did:
+
+- **A mechanical screen does not substitute for reading.** Stripping include directives and
+  measuring the prose that remains flags nothing on `q009` — 535 characters is mid-range for this
+  corpus. Its defect is not thin prose but prose that omits the mechanism. Only reading finds that.
+- **Rule 5 caught a rewrite made under rule 5.** The first replacement drafted for `q015` —
+  "what does FastAPI generate that both of its built-in docs pages read from?" — is itself two
+  clauses, and `first-steps#openapi` answers the first. The rule applies to corrections, not only to
+  original authorship.
+- **The rule costs about two minutes per row and found four defects in rows that were scoring
+  correctly.** Score-driven triage would have found none of them: all four were hits.
 
 ## `out_of_scope` composition
 

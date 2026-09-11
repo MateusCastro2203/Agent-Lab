@@ -56,8 +56,8 @@ recall@5 by 4pp has told you nothing; only differences of about 15pp or more are
 sample size. Reporting a number to one decimal place does not make it precise.
 
 **Coverage is skewed to `tutorial/`, so a third of the corpus is only ever a distractor.** The 20
-in-scope gold sections fall out by directory as `tutorial` 17, `advanced` 2, `deployment` 1, and
-`how-to` **0** — while `advanced/` is 252 of the 944 sections and `how-to/` is 78. Roughly 35% of
+in-scope rows name 24 gold sections, and they fall out by directory as `tutorial` 20, `advanced` 3,
+`deployment` 1, and `how-to` **0** — while `advanced/` is 252 of the 944 sections and `how-to/` is 78. Roughly 35% of
 the corpus therefore has no gold row pointing into it and serves only to be *not* retrieved. A
 retrieval regression confined to those two subtrees would leave recall@5 completely unchanged, so
 the score is evidence about `tutorial/` far more than about the corpus as a whole.
@@ -81,7 +81,26 @@ contains the answer scores badly.
 | Version | Classification accuracy | recall@5 | Model | Date |
 | ------- | ----------------------- | -------- | ----- | ---- |
 | 2b (retrieval only) | – | 0.60 | nomic-embed-text | 2026-09-11 |
+| 2c (golden set repaired) | – | 0.65 | nomic-embed-text | 2026-09-11 |
 | v1      | –                       | –        | –     | –    |
+
+**The two rows differ by the ruler, not by the retriever.** Nothing about embedding, chunking or
+search changed between them. The `0.60` was measured against a golden set with seven defective rows,
+found by auditing all twenty in-scope rows against authoring rules 5 and 6 (see the amendment in
+`docs/superpowers/specs/2026-09-10-golden-set-design.md`). It stays in the table because a baseline
+that is deleted is a baseline that can be quietly re-chosen later.
+
+Only three rows moved. Four of the seven repairs added a second gold section to a row whose answer
+the documentation genuinely splits, and `hit` is `goldRank <= k` over the best of them — so those
+four provably could not move, and did not. Of the three rewritten questions, one became a hit
+(`q015`, rank 20 → 1), one is still a miss with a rank that now means something (`q009`, beyond 100
+→ 68), and one got **worse** (`q014`, rank 6 → 22). That last one is left alone on purpose: a
+question is fixed by whether exactly one section answers it in prose, never by where its gold ranks.
+Rewriting until the rank improves is how a measuring stick stops measuring.
+
+The whole repair is worth 5pp — one row — which this README's own resolution rule calls noise. The
+point was never the number. It was that four rows scoring as hits were doing so against golds that
+would have punished a correct answer, and the score could not have told anyone that.
 
 ## Stack
 
