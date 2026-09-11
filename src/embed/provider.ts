@@ -1,4 +1,4 @@
-import { embed, embedMany } from "ai";
+import { embed, embedMany, type EmbeddingModel } from "ai";
 import { createOllama } from "ollama-ai-provider-v2";
 
 export const EMBEDDING_MODEL = "nomic-embed-text";
@@ -60,12 +60,11 @@ function handleEmbedFailure(error: unknown): never {
   process.exit(1);
 }
 
-export function ollamaEmbedder(): Embedder {
-  // baseURL needs the /api suffix; OLLAMA_URL does not carry it. Verified
-  // against the running server.
-  const provider = createOllama({ baseURL: `${ollamaUrl()}/api` });
-  const model = provider.textEmbeddingModel(EMBEDDING_MODEL);
-
+// The model is a parameter so the prefix seam is testable without Ollama: a
+// stub model can record the exact strings each path handed the SDK, which is
+// the only way "documents get search_document, queries get search_query" is
+// checked at all. Swapping the two prefixes below now fails a test.
+export function embedderWith(model: EmbeddingModel): Embedder {
   return {
     model: EMBEDDING_MODEL,
 
@@ -96,4 +95,11 @@ export function ollamaEmbedder(): Embedder {
       }
     },
   };
+}
+
+export function ollamaEmbedder(): Embedder {
+  // baseURL needs the /api suffix; OLLAMA_URL does not carry it. Verified
+  // against the running server.
+  const provider = createOllama({ baseURL: `${ollamaUrl()}/api` });
+  return embedderWith(provider.textEmbeddingModel(EMBEDDING_MODEL));
 }

@@ -1,9 +1,10 @@
 {
-  "timestamp": "2026-09-11T06:19:08.939Z",
+  "timestamp": "2026-09-11T06:43:25.549Z",
   "embeddingModel": "nomic-embed-text",
   "prefixes": true,
   "chunks": 944,
   "k": 5,
+  "rankDepth": 100,
   "recallAt5": 0.6,
   "hits": 12,
   "total": 20,
@@ -54,7 +55,7 @@
         "advanced/custom-response.md#json-responses",
         "how-to/custom-request-and-route.md#use-cases"
       ],
-      "goldRank": null
+      "goldRank": 29
     },
     {
       "id": "q004",
@@ -70,7 +71,7 @@
         "tutorial/response-status-code.md#about-http-status-codes",
         "advanced/response-change-status-code.md#use-case"
       ],
-      "goldRank": null
+      "goldRank": 38
     },
     {
       "id": "q005",
@@ -134,7 +135,7 @@
         "deployment/https.md#https-response",
         "deployment/concepts.md#example-tools-for-https"
       ],
-      "goldRank": null
+      "goldRank": 16
     },
     {
       "id": "q009",
@@ -166,7 +167,7 @@
         "advanced/settings.md#recap",
         "advanced/testing-websockets.md#testing-websockets"
       ],
-      "goldRank": null
+      "goldRank": 7
     },
     {
       "id": "q011",
@@ -230,7 +231,7 @@
         "tutorial/dependencies/sub-dependencies.md#second-dependency-dependable-and-dependant",
         "tutorial/dependencies/index.md#create-a-dependency-or-dependable"
       ],
-      "goldRank": null
+      "goldRank": 6
     },
     {
       "id": "q015",
@@ -246,7 +247,7 @@
         "tutorial/body.md#automatic-docs",
         "tutorial/first-steps.md#alternative-api-docs"
       ],
-      "goldRank": null
+      "goldRank": 20
     },
     {
       "id": "q016",
@@ -294,7 +295,7 @@
         "tutorial/body.md#request-body-path-parameters",
         "advanced/response-directly.md#how-a-response-model-works"
       ],
-      "goldRank": null
+      "goldRank": 20
     },
     {
       "id": "q019",

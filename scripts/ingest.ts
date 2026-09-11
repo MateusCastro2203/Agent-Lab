@@ -58,32 +58,49 @@ try {
     process.stderr.write("\n");
   }
 
-  for (const chunk of chunks) {
-    const vector = vectors.get(chunk.id);
-    if (vector === undefined) continue; // skipped: its stored row is still valid
-    await client.query(
-      `INSERT INTO chunks (id, path, slug, heading_path, text, hash, embedding, model, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, now())
-       ON CONFLICT (id) DO UPDATE SET
-         path = excluded.path, slug = excluded.slug, heading_path = excluded.heading_path,
-         text = excluded.text, hash = excluded.hash, embedding = excluded.embedding,
-         model = excluded.model, updated_at = now()`,
-      [
-        chunk.id,
-        chunk.path,
-        chunk.slug,
-        chunk.headingPath,
-        chunk.text,
-        hashes.get(chunk.id),
-        toVectorLiteral(vector),
-        EMBEDDING_MODEL,
-      ],
-    );
-  }
+  // The upserts and the delete are one transaction. Autocommitted, a crash
+  // part-way through a *re*-ingest leaves 944 rows, 944 embedded, one model —
+  // every eval precondition satisfied — over a mix of old and new chunk text,
+  // which is scoreable and wrong. A first ingest is caught by the row count
+  // coming up short; a re-ingest is not. This also closes the window where
+  // the delete has landed and the upserts have not.
+  let deleted = 0;
+  await client.query("BEGIN");
+  try {
+    for (const chunk of chunks) {
+      const vector = vectors.get(chunk.id);
+      if (vector === undefined) continue; // skipped: its stored row is still valid
+      await client.query(
+        `INSERT INTO chunks (id, path, slug, heading_path, text, hash, embedding, model, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, now())
+         ON CONFLICT (id) DO UPDATE SET
+           path = excluded.path, slug = excluded.slug, heading_path = excluded.heading_path,
+           text = excluded.text, hash = excluded.hash, embedding = excluded.embedding,
+           model = excluded.model, updated_at = now()`,
+        [
+          chunk.id,
+          chunk.path,
+          chunk.slug,
+          chunk.headingPath,
+          chunk.text,
+          hashes.get(chunk.id),
+          toVectorLiteral(vector),
+          EMBEDDING_MODEL,
+        ],
+      );
+    }
 
-  const deleted = await client.query("DELETE FROM chunks WHERE id <> ALL($1::text[])", [
-    chunks.map((c) => c.id),
-  ]);
+    const result = await client.query("DELETE FROM chunks WHERE id <> ALL($1::text[])", [
+      chunks.map((c) => c.id),
+    ]);
+    deleted = result.rowCount ?? 0;
+    await client.query("COMMIT");
+  } catch (error) {
+    // A failed ROLLBACK must not replace the real error: if the connection is
+    // already gone the server aborts the transaction for us either way.
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  }
 
   const counts = await client.query<{ rows: string; embedded: string }>(
     "SELECT count(*) AS rows, count(embedding) AS embedded FROM chunks",
@@ -91,7 +108,7 @@ try {
   const elapsed = ((Date.now() - started) / 1000).toFixed(1);
   console.log(
     `embedded ${vectors.size}, skipped ${chunks.length - needed.length}, ` +
-      `deleted ${deleted.rowCount ?? 0} in ${elapsed}s`,
+      `deleted ${deleted} in ${elapsed}s`,
   );
   console.log(`chunks: ${counts.rows[0]?.rows} rows, ${counts.rows[0]?.embedded} embedded`);
 } finally {

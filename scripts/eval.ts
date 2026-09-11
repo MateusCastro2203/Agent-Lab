@@ -14,18 +14,33 @@ const client = await connect();
 try {
   // Preconditions first. A half-ingested table produces a number that looks
   // real and is not, so refuse to score instead of publishing it.
-  const state = await client.query<{ rows: string; embedded: string; models: string }>(
-    "SELECT count(*) AS rows, count(embedding) AS embedded, count(DISTINCT model) AS models FROM chunks",
+  // `matching` is the check that catches a model swap without a re-ingest:
+  // one distinct model is not the same claim as that model being the one
+  // `topK` filters on. Without it, 944 rows embedded by some other model pass
+  // every count here and then match zero rows in the query, and the script
+  // reports 0.00 as though it had measured something.
+  const state = await client.query<{
+    rows: string;
+    embedded: string;
+    models: string;
+    matching: string;
+  }>(
+    `SELECT count(*) AS rows, count(embedding) AS embedded, count(DISTINCT model) AS models,
+            count(*) FILTER (WHERE model = $1) AS matching
+     FROM chunks`,
+    [EMBEDDING_MODEL],
   );
   const sections = await enumerateSections();
   const expected = sections.length;
   const rows = Number(state.rows[0]?.rows ?? 0);
   const embedded = Number(state.rows[0]?.embedded ?? 0);
   const models = Number(state.rows[0]?.models ?? 0);
-  if (rows !== expected || embedded !== expected || models !== 1) {
+  const matching = Number(state.rows[0]?.matching ?? 0);
+  if (rows !== expected || embedded !== expected || models !== 1 || matching !== expected) {
     fail(
       `the chunks table is not ready to score.\n` +
-        `  rows ${rows} (expected ${expected}), embedded ${embedded}, distinct models ${models} (expected 1)\n\n` +
+        `  rows ${rows} (expected ${expected}), embedded ${embedded}, distinct models ${models} (expected 1)\n` +
+        `  rows with model = ${EMBEDDING_MODEL}: ${matching} (expected ${expected})\n\n` +
         `Run:\n  npm run ingest\n`,
     );
   }
@@ -41,6 +56,27 @@ try {
   }
 
   const inScope = golden.filter((row) => row.type !== "out_of_scope");
+
+  // Counts do not establish that the gold sections are reachable. Chunk ids
+  // are section ids, but that equality lives in a unit test, and a divergence
+  // of equal cardinality would leave gold rows with no row to retrieve —
+  // deflating recall with nothing in this script failing. So look them up.
+  const goldIds = [...new Set(inScope.flatMap((row) => row.sections))];
+  const reachable = await client.query<{ id: string }>(
+    "SELECT id FROM chunks WHERE id = ANY($1::text[])",
+    [goldIds],
+  );
+  if (reachable.rows.length !== goldIds.length) {
+    const found = new Set(reachable.rows.map((r) => r.id));
+    const missing = goldIds.filter((id) => !found.has(id));
+    fail(
+      `${missing.length} of ${goldIds.length} gold sections have no chunk, so they can never be\n` +
+        `retrieved and recall would be understated. Missing:\n` +
+        missing.map((id) => `  ${id}`).join("\n") +
+        `\n\nRun:\n  npm run ingest\n`,
+    );
+  }
+
   const embedder = ollamaEmbedder();
   const retrieved = new Map<string, string[]>();
   for (const row of inScope) {

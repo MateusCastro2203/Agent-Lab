@@ -1,11 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import type { EmbeddingModel } from "ai";
 import {
   assertDimensions,
   batch,
   BATCH_SIZE,
   DimensionMismatchError,
   DOCUMENT_PREFIX,
+  embedderWith,
   EMBEDDING_DIM,
   ollamaUrl,
   QUERY_PREFIX,
@@ -70,4 +72,43 @@ test("the prefixes are the ones nomic documents", () => {
   assert.equal(DOCUMENT_PREFIX, "search_document: ");
   assert.equal(QUERY_PREFIX, "search_query: ");
   assert.equal(BATCH_SIZE, 64);
+});
+
+// The prefixes only matter if the document path uses DOCUMENT_PREFIX and the
+// query path uses QUERY_PREFIX. Asserting their values (above) does not check
+// that, so these two tests read back the exact strings the embedder handed the
+// model. A stub standing in for Ollama is what makes them runnable offline:
+// it satisfies EmbeddingModelV4 — the interface `provider.textEmbeddingModel`
+// returns — and records every `values` array `doEmbed` received.
+function recorder(): { model: EmbeddingModel; seen: string[] } {
+  const seen: string[] = [];
+  const model: EmbeddingModel = {
+    specificationVersion: "v4",
+    provider: "test",
+    modelId: "recording-stub",
+    maxEmbeddingsPerCall: BATCH_SIZE,
+    supportsParallelCalls: false,
+    async doEmbed({ values }) {
+      seen.push(...values);
+      return {
+        embeddings: values.map(() => new Array<number>(EMBEDDING_DIM).fill(0)),
+        warnings: [],
+      };
+    },
+  };
+  return { model, seen };
+}
+
+test("embedDocuments prefixes every text with DOCUMENT_PREFIX", async () => {
+  const { model, seen } = recorder();
+  await embedderWith(model).embedDocuments(["alpha", "beta"]);
+  assert.deepEqual(seen, [`${DOCUMENT_PREFIX}alpha`, `${DOCUMENT_PREFIX}beta`]);
+  assert.deepEqual(seen, ["search_document: alpha", "search_document: beta"]);
+});
+
+test("embedQuery prefixes the text with QUERY_PREFIX", async () => {
+  const { model, seen } = recorder();
+  await embedderWith(model).embedQuery("alpha");
+  assert.deepEqual(seen, [`${QUERY_PREFIX}alpha`]);
+  assert.deepEqual(seen, ["search_query: alpha"]);
 });
