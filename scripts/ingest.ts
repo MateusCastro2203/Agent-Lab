@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { connect } from "../src/db/client.ts";
+import { connect, fail } from "../src/db/client.ts";
 import { enumerateChunks, type Chunk } from "../src/corpus/chunks.ts";
 import { EMBEDDING_MODEL, ollamaEmbedder } from "../src/embed/provider.ts";
 import { toVectorLiteral } from "../src/retrieve/search.ts";
@@ -10,6 +10,18 @@ function hashText(text: string): string {
 
 const started = Date.now();
 const chunks = await enumerateChunks();
+
+// An empty result means nothing downstream makes sense: the delete step below
+// removes any row whose id is not in `chunks`, so an empty `chunks` would wipe
+// the entire table. Refuse before opening a database connection at all.
+if (chunks.length === 0) {
+  fail(
+    "enumerateChunks() returned no chunks — refusing to continue.\n" +
+      "  An empty corpus would make the delete step wipe every stored row.\n" +
+      "  Check that corpus/ is populated (expected 944 sections over 106 files).",
+  );
+}
+
 const hashes = new Map(chunks.map((c) => [c.id, hashText(c.text)]));
 console.log(`corpus: ${chunks.length} chunks`);
 
