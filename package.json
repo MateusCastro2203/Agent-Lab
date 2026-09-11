@@ -21,6 +21,9 @@
     "typescript": "^5.9.0"
   },
   "dependencies": {
-    "pg": "^8.23.0"
+    "ai": "^7.0.97",
+    "ollama-ai-provider-v2": "^4.0.1",
+    "pg": "^8.23.0",
+    "zod": "^4.6.2"
   }
 }
