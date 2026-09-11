@@ -64,6 +64,18 @@ test("a multi-entry gold hits on any member", () => {
   assert.equal(report.rows[0]!.goldRank, 2);
 });
 
+test("multi-entry gold takes the best rank, not the first listed", () => {
+  const rows = twentyInScope();
+  rows[0]!.sections = ["s0#late", "s0#early"];
+  const retrieved = allHit(rows);
+  retrieved.set(rows[0]!.id, ["x#1", "s0#early", "x#3", "x#4", "x#5", "s0#late"]);
+  const report = scoreRecall(rows, retrieved, 5);
+  // "s0#early" is at rank 2, "s0#late" at rank 6. Math.min picks rank 2.
+  // If Math.min were replaced with ranks[0], goldRank would be 6 and hit would be false.
+  assert.equal(report.rows[0]!.goldRank, 2);
+  assert.equal(report.rows[0]!.hit, true);
+});
+
 test("goldRank is null when no gold appears at all", () => {
   const rows = twentyInScope();
   const retrieved = allHit(rows);
