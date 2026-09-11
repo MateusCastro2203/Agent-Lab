@@ -1,0 +1,333 @@
+{
+  "timestamp": "2026-09-11T06:24:52.876Z",
+  "embeddingModel": "nomic-embed-text",
+  "prefixes": true,
+  "chunks": 944,
+  "k": 5,
+  "rankDepth": 100,
+  "recallAt5": 0.6,
+  "hits": 12,
+  "total": 20,
+  "rows": [
+    {
+      "id": "q001",
+      "question": "How do I make a query parameter optional?",
+      "hit": true,
+      "gold": [
+        "tutorial/query-params.md#optional-parameters"
+      ],
+      "retrieved": [
+        "tutorial/query-params.md#optional-parameters",
+        "tutorial/query-params.md#required-query-parameters",
+        "tutorial/query-params-str-validations.md#required-parameters",
+        "tutorial/query-params-str-validations.md#alternative-old-query-as-the-default-value",
+        "tutorial/query-params-str-validations.md#required-can-be-none"
+      ],
+      "goldRank": 1
+    },
+    {
+      "id": "q002",
+      "question": "How do I read a value out of the URL path?",
+      "hit": true,
+      "gold": [
+        "tutorial/path-params.md#path-parameters"
+      ],
+      "retrieved": [
+        "tutorial/path-params.md#path-parameters",
+        "advanced/templates.md#template-url-for-arguments",
+        "tutorial/path-params.md#path-convertor",
+        "tutorial/first-steps.md#path",
+        "advanced/behind-a-proxy.md#checking-the-current-root-path"
+      ],
+      "goldRank": 1
+    },
+    {
+      "id": "q003",
+      "question": "How do I accept a JSON payload in a POST request?",
+      "hit": false,
+      "gold": [
+        "tutorial/body.md#request-body"
+      ],
+      "retrieved": [
+        "advanced/strict-content-type.md#strict-content-type-checking",
+        "advanced/custom-response.md#jsonresponse",
+        "tutorial/first-steps.md#check-it",
+        "advanced/custom-response.md#json-responses",
+        "how-to/custom-request-and-route.md#use-cases"
+      ],
+      "goldRank": 29
+    },
+    {
+      "id": "q004",
+      "question": "How do I make an endpoint return 201 instead of 200?",
+      "hit": false,
+      "gold": [
+        "tutorial/response-status-code.md#response-status-code"
+      ],
+      "retrieved": [
+        "advanced/additional-responses.md#combining-information",
+        "tutorial/handling-errors.md#handling-errors",
+        "advanced/custom-response.md#redirectresponse",
+        "tutorial/response-status-code.md#about-http-status-codes",
+        "advanced/response-change-status-code.md#use-case"
+      ],
+      "goldRank": 38
+    },
+    {
+      "id": "q005",
+      "question": "How do I accept an uploaded file?",
+      "hit": true,
+      "gold": [
+        "tutorial/request-files.md#request-files"
+      ],
+      "retrieved": [
+        "tutorial/request-files.md#request-files",
+        "tutorial/request-files.md#multiple-file-uploads",
+        "tutorial/request-files.md#recap",
+        "tutorial/request-files.md#uploadfile",
+        "tutorial/request-files.md#import-file"
+      ],
+      "goldRank": 1
+    },
+    {
+      "id": "q006",
+      "question": "How do I read the fields of a submitted HTML form?",
+      "hit": true,
+      "gold": [
+        "tutorial/request-forms.md#form-data"
+      ],
+      "retrieved": [
+        "tutorial/request-forms.md#about-form-fields",
+        "tutorial/request-files.md#what-is-form-data",
+        "tutorial/request-forms.md#form-data",
+        "tutorial/request-form-models.md#forbid-extra-form-fields",
+        "tutorial/request-form-models.md#pydantic-models-for-forms"
+      ],
+      "goldRank": 3
+    },
+    {
+      "id": "q007",
+      "question": "How do I set a cookie on the response?",
+      "hit": true,
+      "gold": [
+        "advanced/response-cookies.md#use-a-response-parameter"
+      ],
+      "retrieved": [
+        "advanced/response-cookies.md#use-a-response-parameter",
+        "advanced/response-cookies.md#return-a-response-directly",
+        "advanced/response-cookies.md#more-info",
+        "advanced/response-headers.md#use-a-response-parameter",
+        "advanced/response-change-status-code.md#use-a-response-parameter"
+      ],
+      "goldRank": 1
+    },
+    {
+      "id": "q008",
+      "question": "How do I serve the app over HTTPS in production?",
+      "hit": false,
+      "gold": [
+        "deployment/https.md#about-https"
+      ],
+      "retrieved": [
+        "deployment/docker.md#https",
+        "tutorial/frontend.md#serve-a-frontend",
+        "deployment/https.md#multiple-applications",
+        "deployment/https.md#https-response",
+        "deployment/concepts.md#example-tools-for-https"
+      ],
+      "goldRank": 16
+    },
+    {
+      "id": "q009",
+      "question": "How do I reuse one database connection across several endpoints?",
+      "hit": false,
+      "gold": [
+        "tutorial/dependencies/dependencies-with-yield.md#a-database-dependency-with-yield"
+      ],
+      "retrieved": [
+        "advanced/websockets.md#handling-disconnections-and-multiple-clients",
+        "tutorial/extra-models.md#recap",
+        "tutorial/sql-databases.md#create-an-engine",
+        "tutorial/server-sent-events.md#resuming-with-last-event-id",
+        "tutorial/dependencies/sub-dependencies.md#using-the-same-dependency-multiple-times"
+      ],
+      "goldRank": null
+    },
+    {
+      "id": "q010",
+      "question": "How do I write an automated test that calls one of my endpoints?",
+      "hit": false,
+      "gold": [
+        "tutorial/testing.md#using-testclient"
+      ],
+      "retrieved": [
+        "advanced/async-tests.md#other-asynchronous-function-calls",
+        "advanced/async-tests.md#pytest-mark-anyio",
+        "advanced/async-tests.md#async-tests",
+        "advanced/settings.md#recap",
+        "advanced/testing-websockets.md#testing-websockets"
+      ],
+      "goldRank": 7
+    },
+    {
+      "id": "q011",
+      "question": "What is the difference between a path parameter and a query parameter?",
+      "hit": true,
+      "gold": [
+        "tutorial/query-params.md#query-parameters"
+      ],
+      "retrieved": [
+        "tutorial/path-params-numeric-validations.md#path-parameters-and-numeric-validations",
+        "tutorial/query-params.md#query-parameters",
+        "tutorial/query-params.md#optional-parameters",
+        "tutorial/query-params.md#multiple-path-and-query-parameters",
+        "tutorial/path-params.md#path-parameters"
+      ],
+      "goldRank": 2
+    },
+    {
+      "id": "q012",
+      "question": "Why does FastAPI care about type hints at all?",
+      "hit": true,
+      "gold": [
+        "tutorial/path-params.md#recap"
+      ],
+      "retrieved": [
+        "tutorial/response-model.md#fastapi-data-filtering",
+        "deployment/versions.md#about-versions",
+        "advanced/index.md#additional-features",
+        "tutorial/path-params.md#recap",
+        "advanced/strict-content-type.md#strict-content-type-checking"
+      ],
+      "goldRank": 4
+    },
+    {
+      "id": "q013",
+      "question": "What changes about how a route runs if I declare it `async def`?",
+      "hit": true,
+      "gold": [
+        "advanced/stream-data.md#files-and-async"
+      ],
+      "retrieved": [
+        "tutorial/dependencies/index.md#to-async-or-not-to-async",
+        "advanced/stream-data.md#non-async-path-operation-functions",
+        "advanced/async-tests.md#in-detail",
+        "advanced/stream-data.md#files-and-async",
+        "advanced/async-tests.md#httpx"
+      ],
+      "goldRank": 4
+    },
+    {
+      "id": "q014",
+      "question": "What is a dependency, and why not just call the function myself?",
+      "hit": false,
+      "gold": [
+        "tutorial/dependencies/index.md#what-is-dependency-injection"
+      ],
+      "retrieved": [
+        "tutorial/dependencies/index.md#simple-usage",
+        "tutorial/dependencies/classes-as-dependencies.md#what-makes-a-dependency",
+        "tutorial/dependencies/index.md#declare-the-dependency-in-the-dependant",
+        "tutorial/dependencies/sub-dependencies.md#second-dependency-dependable-and-dependant",
+        "tutorial/dependencies/index.md#create-a-dependency-or-dependable"
+      ],
+      "goldRank": 6
+    },
+    {
+      "id": "q015",
+      "question": "Where does the interactive API documentation page come from?",
+      "hit": false,
+      "gold": [
+        "tutorial/first-steps.md#what-is-openapi-for"
+      ],
+      "retrieved": [
+        "tutorial/first-steps.md#interactive-api-docs",
+        "deployment/docker.md#interactive-api-docs",
+        "tutorial/path-params.md#documentation",
+        "tutorial/body.md#automatic-docs",
+        "tutorial/first-steps.md#alternative-api-docs"
+      ],
+      "goldRank": 20
+    },
+    {
+      "id": "q016",
+      "question": "What does declaring a response model do that a return type annotation does not?",
+      "hit": true,
+      "gold": [
+        "tutorial/response-model.md#response-model-parameter"
+      ],
+      "retrieved": [
+        "tutorial/response-model.md#response-model-or-return-type",
+        "tutorial/response-model.md#return-a-response-directly",
+        "tutorial/response-model.md#other-return-type-annotations",
+        "tutorial/response-model.md#response-model-parameter",
+        "tutorial/response-model.md#annotate-a-response-subclass"
+      ],
+      "goldRank": 4
+    },
+    {
+      "id": "q017",
+      "question": "Why would I split routes into routers instead of putting them all on the app?",
+      "hit": true,
+      "gold": [
+        "tutorial/bigger-applications.md#apirouter"
+      ],
+      "retrieved": [
+        "tutorial/bigger-applications.md#include-the-apirouters-for-users-and-items",
+        "tutorial/bigger-applications.md#apirouter",
+        "tutorial/bigger-applications.md#include-the-same-router-multiple-times-with-different-prefix",
+        "tutorial/bigger-applications.md#avoid-name-collisions",
+        "tutorial/bigger-applications.md#include-a-path-operation"
+      ],
+      "goldRank": 2
+    },
+    {
+      "id": "q018",
+      "question": "What does FastAPI actually do with a Pydantic model when a request arrives?",
+      "hit": false,
+      "gold": [
+        "tutorial/body.md#results"
+      ],
+      "retrieved": [
+        "advanced/dataclasses.md#using-dataclasses",
+        "tutorial/response-model.md#fastapi-data-filtering",
+        "advanced/response-directly.md#return-a-response-directly",
+        "tutorial/body.md#request-body-path-parameters",
+        "advanced/response-directly.md#how-a-response-model-works"
+      ],
+      "goldRank": 20
+    },
+    {
+      "id": "q019",
+      "question": "What are the limits of background tasks compared with a real task queue?",
+      "hit": true,
+      "gold": [
+        "tutorial/background-tasks.md#caveat"
+      ],
+      "retrieved": [
+        "tutorial/background-tasks.md#caveat",
+        "tutorial/background-tasks.md#background-tasks",
+        "tutorial/background-tasks.md#create-a-task-function",
+        "tutorial/background-tasks.md#dependency-injection",
+        "tutorial/background-tasks.md#technical-details"
+      ],
+      "goldRank": 1
+    },
+    {
+      "id": "q020",
+      "question": "What can middleware see, and when does it run relative to my endpoint?",
+      "hit": true,
+      "gold": [
+        "tutorial/middleware.md#middleware"
+      ],
+      "retrieved": [
+        "tutorial/middleware.md#middleware",
+        "tutorial/middleware.md#multiple-middleware-execution-order",
+        "tutorial/middleware.md#before-and-after-the-response",
+        "tutorial/middleware.md#other-middlewares",
+        "tutorial/frontend.md#dependencies-and-middleware"
+      ],
+      "goldRank": 1
+    }
+  ]
+}

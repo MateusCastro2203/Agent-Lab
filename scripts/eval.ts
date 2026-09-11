@@ -8,6 +8,7 @@ import { enumerateSections } from "../src/corpus/sections.ts";
 import { scoreRecall } from "../src/evals/recall.ts";
 
 const K = 5;
+const RANK_DEPTH = 100; // rank misses this deep; null then means "worse than 100"
 
 const client = await connect();
 try {
@@ -44,7 +45,7 @@ try {
   const retrieved = new Map<string, string[]>();
   for (const row of inScope) {
     const vector = await embedder.embedQuery(row.question);
-    const hits = await topK(client, vector, K, EMBEDDING_MODEL);
+    const hits = await topK(client, vector, RANK_DEPTH, EMBEDDING_MODEL);
     retrieved.set(row.id, hits.map((h) => h.id));
   }
 
@@ -58,6 +59,7 @@ try {
     prefixes: true,
     chunks: rows,
     k: report.k,
+    rankDepth: RANK_DEPTH,
     recallAt5: report.recallAt5,
     hits: report.hits,
     total: report.total,
@@ -75,7 +77,7 @@ try {
     for (const row of missed) {
       console.log(`\n  ${row.id}  ${row.question}`);
       console.log(`    gold: ${row.gold.join(", ")}`);
-      console.log(`    gold rank: ${row.goldRank ?? "not in any result"}`);
+      console.log(`    gold rank: ${row.goldRank ?? `not in the top ${RANK_DEPTH}`}`);
       for (const [i, id] of row.retrieved.entries()) console.log(`    ${i + 1}. ${id}`);
     }
   }
