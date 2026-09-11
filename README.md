@@ -41,8 +41,9 @@ the three directly comparable, though 10 rows is a coarse basis: one row is 10pp
 resolve anything smaller than a very large change, so reporting it per class would invite reading
 noise as a per-label regression.
 
-`npm run validate:golden` proves every row points at a section that exists. `npm run eval` will run
-the questions and print both numbers — that arrives with the next chunk.
+`npm run validate:golden` proves every row points at a section that exists. `npm run ingest` embeds
+the corpus and `npm run eval` scores recall@5 over the 20 in-scope rows, writing a JSON artifact
+under `evals/results/`. Classification accuracy arrives with the `classify` node.
 
 ### What the numbers cannot tell you
 
@@ -79,6 +80,7 @@ contains the answer scores badly.
 
 | Version | Classification accuracy | recall@5 | Model | Date |
 | ------- | ----------------------- | -------- | ----- | ---- |
+| 2b (retrieval only) | – | 0.60 | nomic-embed-text | 2026-09-11 |
 | v1      | –                       | –        | –     | –    |
 
 ## Stack
@@ -116,6 +118,9 @@ docker compose up -d      # Postgres + pgvector
 docker compose ps         # wait for db to read "healthy"
 npm run db:setup          # apply db/schema.sql (idempotent)
 npm run db:check          # confirm extension, table, row counts, schema fingerprint
+
+npm run ingest            # embed 944 chunks into pgvector (~40s, needs Ollama)
+npm run eval              # score recall@5 and write evals/results/<iso>.json
 
 npm run corpus:fetch      # re-vendor the pinned FastAPI docs (already committed)
 npm run sections          # list every section id
