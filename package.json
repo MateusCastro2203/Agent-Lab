@@ -12,6 +12,7 @@
     "db:check": "node --env-file-if-exists=.env scripts/db.ts check",
     "db:reset": "node --env-file-if-exists=.env scripts/db.ts reset",
     "ingest": "node --env-file-if-exists=.env scripts/ingest.ts",
+    "eval": "node --env-file-if-exists=.env scripts/eval.ts",
     "corpus:fetch": "bash scripts/fetch-corpus.sh",
     "sections": "node scripts/list-sections.ts",
     "validate:golden": "node scripts/validate-golden.ts --final"
