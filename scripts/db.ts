@@ -79,9 +79,13 @@ async function check(): Promise<void> {
       `SELECT count(*) AS rows, count(embedding) AS embedded FROM chunks`,
     );
     const row = counts.rows[0];
-    const server = await client.query<{ version: string }>("SHOW server_version");
+    // `SHOW server_version` names its column server_version, and its value
+    // carries the packaging suffix — "17.11 (Debian 17.11-1.pgdg13+2)". The
+    // image tag already records the build, so keep just the version number.
+    const server = await client.query<{ server_version: string }>("SHOW server_version");
+    const serverVersion = server.rows[0]?.server_version.split(" ")[0] ?? "?";
 
-    console.log(`postgres ${server.rows[0]?.version ?? "?"}, pgvector ${version}`);
+    console.log(`postgres ${serverVersion}, pgvector ${version}`);
     console.log(`chunks: ${row?.rows ?? "0"} rows, ${row?.embedded ?? "0"} embedded`);
     console.log("db OK");
   } finally {
