@@ -13,6 +13,9 @@ export interface Section {
   // where the formatting is a useful signal). Only `slugify` strips markdown.
   title: string;
   level: number;
+  /** 0-based index of this heading's line in its file. Lets chunks.ts find
+   *  where the section ends without re-walking the fence state machine. */
+  line: number;
   url: string;
   anchorSource: AnchorSource;
 }
@@ -43,7 +46,9 @@ export function parseSections(relPath: string, markdown: string): Section[] {
   const taken = new Set<string>();
   let openFence: string | null = null;
 
-  for (const line of markdown.split("\n")) {
+  const allLines = markdown.split("\n");
+  for (let lineNo = 0; lineNo < allLines.length; lineNo += 1) {
+    const line = allLines[lineNo]!;
     const fence = FENCE.exec(line);
     if (fence) {
       const marker = fence[1]!;
@@ -76,6 +81,7 @@ export function parseSections(relPath: string, markdown: string): Section[] {
       slug,
       title,
       level,
+      line: lineNo,
       url: toUrl(relPath, slug),
       anchorSource: declared ? "declared" : "slugified",
     });

@@ -10,6 +10,7 @@ const section = (path: string, slug: string): Section => ({
   slug,
   title: slug,
   level: 2,
+  line: 0,
   url: `https://fastapi.tiangolo.com/${path.slice(0, -3)}/#${slug}`,
   anchorSource: "declared",
 });

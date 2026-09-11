@@ -77,3 +77,25 @@ test("no real corpus section id contains a space", async () => {
   const bad = sections.filter((s) => /\s/.test(s.id));
   assert.deepEqual(bad.map((s) => s.id), []);
 });
+
+test("records the 0-based line index of each heading", async () => {
+  const sections = parseSections("f.md", await fixture("declared-anchors.md"));
+  // Verified against tests/fixtures/declared-anchors.md: the three headings sit
+  // on 0-based lines 0, 4 and 8.
+  assert.deepEqual(
+    sections.map((s) => [s.slug, s.line]),
+    [
+      ["query-parameters", 0],
+      ["optional-parameters", 4],
+      ["no-spaces-in-braces", 8],
+    ],
+  );
+});
+
+test("line indexes skip fenced content, matching the sections found", async () => {
+  const sections = parseSections("f.md", await fixture("fenced-code.md"));
+  const lines = (await fixture("fenced-code.md")).split("\n");
+  for (const section of sections) {
+    assert.match(lines[section.line] ?? "", /^#{1,6} /, `line ${section.line} is not a heading`);
+  }
+});
