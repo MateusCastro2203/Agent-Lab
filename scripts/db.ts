@@ -1,48 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { Client } from "pg";
+import type { Client } from "pg";
+import { connect, databaseUrl, fail } from "../src/db/client.ts";
 
-const DEFAULT_URL = "postgres://agentlab:agentlab@localhost:5433/agentlab";
-const url = process.env.DATABASE_URL ?? DEFAULT_URL;
 const SCHEMA_PATH = "db/schema.sql";
-
-function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
-
-// Connecting to `localhost` tries IPv6 and IPv4, and the failure arrives as an
-// AggregateError whose own `message` is empty — the causes are in `.errors`.
-// Reading only `.message` printed a blank reason, so unwrap the aggregate.
-function describe(error: unknown): string {
-  if (error instanceof AggregateError) {
-    const causes = error.errors.map(describe).filter((m) => m !== "");
-    const unique = [...new Set(causes)];
-    if (unique.length > 0) return unique.join("; ");
-  }
-  if (error instanceof Error && error.message !== "") return error.message;
-  return String(error);
-}
-
-function unreachable(reason: string): never {
-  fail(
-    `Cannot reach Postgres at ${url}\n` +
-      `  ${reason}\n\n` +
-      `Is the container up? Start it and wait for the healthcheck:\n` +
-      `  docker compose up -d\n` +
-      `  docker compose ps        # db should read "healthy"\n`,
-  );
-}
-
-async function connect(): Promise<Client> {
-  const client = new Client({ connectionString: url });
-  try {
-    await client.connect();
-  } catch (error) {
-    unreachable(describe(error));
-  }
-  return client;
-}
 
 // Fingerprint of the schema's meaning, not its bytes: comments and whitespace
 // are stripped so that editing the file's prose cannot raise a false drift
@@ -84,7 +45,7 @@ async function setup(): Promise<void> {
        ON CONFLICT (id) DO UPDATE SET hash = excluded.hash, applied_at = now()`,
       [hash],
     );
-    console.log(`applied ${SCHEMA_PATH} to ${url}`);
+    console.log(`applied ${SCHEMA_PATH} to ${databaseUrl()}`);
   } finally {
     await client.end();
   }
@@ -180,7 +141,7 @@ async function reset(): Promise<void> {
       await client.end();
       closed = true;
       fail(
-        `db:reset drops the tables in ${url} and reapplies ${SCHEMA_PATH}.\n` +
+        `db:reset drops the tables in ${databaseUrl()} and reapplies ${SCHEMA_PATH}.\n` +
           `${embedded} embedded row(s) would be lost and need a re-ingest.\n\n` +
           `Re-run with the flag if that is what you want:\n` +
           `  npm run db:reset -- --force`,
