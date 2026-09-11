@@ -1,9 +1,27 @@
 # Retrieval and recall@5 — Design
 
 **Date:** 2026-09-11
-**Status:** Approved, not yet implemented
+**Status:** Approved, **partly superseded** — see the note below.
 **Scope:** Embed the corpus, retrieve the top 5 sections for a question, and print the first real
-recall@5. No LLM, no graph, no Postgres.
+recall@5. No LLM, no graph.
+
+> ## Superseded: storage and search moved to pgvector
+>
+> This spec was written with a flat-file vector store (`data/embeddings.jsonl`) and a dot product in
+> JavaScript, on the argument that 944 vectors do not need a database. That argument was overruled,
+> correctly: Postgres is promised by the README for the agent's run state anyway, so a file-based
+> store would have been written twice, and learning pgvector is part of this project's point.
+>
+> Postgres and pgvector now exist — `docker-compose.yml`, `db/schema.sql`, `npm run db:setup`. So
+> **the Storage and Search sections below are obsolete**: vectors live in the `chunks` table and the
+> top-k comes from `ORDER BY embedding <=> $1 LIMIT 5`, which removes most of `search.ts`.
+>
+> Everything else stands, and the probe findings in particular are unaffected. This document will be
+> revised before its implementation plan is written.
+>
+> One decision from that work belongs here because it bears directly on the metric: `db/schema.sql`
+> creates **no** vector index. HNSW and IVFFlat are approximate, and at 944 rows there is no scan
+> cost to win while the exactness they trade away is exactly what recall@5 measures.
 
 ## Why this chunk, and why it is this small
 
