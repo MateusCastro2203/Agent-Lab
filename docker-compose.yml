@@ -1,0 +1,34 @@
+# Postgres + pgvector for Agent-Lab.
+#
+# Ollama is deliberately NOT a service here. On macOS, Docker Desktop runs a
+# Linux VM and Metal does not pass through, so a containerised Ollama would be
+# CPU-only. Measured host throughput is 42ms per chunk — about 39s for the whole
+# 944-section corpus; in a container that becomes minutes, paid again on every
+# re-ingest. Ollama runs on the host instead. See the README's prerequisites.
+#
+# The image is pinned to a full tag, the same discipline the corpus uses: a
+# floating tag would silently change the Postgres or pgvector version under a
+# stored set of embeddings.
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg17-trixie
+    container_name: agentlab-db
+    environment:
+      POSTGRES_USER: agentlab
+      POSTGRES_PASSWORD: agentlab
+      POSTGRES_DB: agentlab
+    ports:
+      # 5433 on the host, to avoid colliding with a Postgres already on 5432.
+      - "5433:5432"
+    volumes:
+      - agentlab-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentlab -d agentlab"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  agentlab-pgdata:

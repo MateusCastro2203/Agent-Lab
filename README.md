@@ -83,24 +83,51 @@ contains the answer scores badly.
 
 ## Stack
 
-TypeScript, LangGraph, Postgres + pgvector (Docker), AI SDK. Ollama for the agent (local, no cost),
-OpenRouter when a stronger model is needed.
+TypeScript, LangGraph, Postgres + pgvector (Docker), AI SDK. Ollama on the host for embeddings and
+for the agent (local, no cost), OpenRouter when a stronger model is needed.
+
+The database holds one row per corpus section — id, text, and its embedding — and later the agent's
+persisted run state. `db/schema.sql` deliberately creates **no** vector index: HNSW and IVFFlat are
+approximate, and at 944 rows there is no scan cost to win while the exactness they trade away is
+what recall@5 measures.
+
+## Prerequisites
+
+**Docker**, for Postgres and pgvector. The compose file runs only the database.
+
+**Ollama on the host**, with the embedding model:
+
+```bash
+ollama pull nomic-embed-text
+```
+
+Ollama is deliberately *not* containerised. On macOS, Docker Desktop runs a Linux VM and Metal does
+not pass through, so a containerised Ollama would be CPU-only — measured host throughput is 42ms per
+section, about 39s for the whole corpus, and in a container that becomes minutes, paid again on
+every re-ingest.
 
 ## Running it
 
 ```bash
 npm install
+cp .env.example .env      # optional; the scripts fall back to the same defaults
+
+docker compose up -d      # Postgres + pgvector
+docker compose ps         # wait for db to read "healthy"
+npm run db:setup          # apply db/schema.sql (idempotent)
+npm run db:check          # confirm extension, table, row counts
+
 npm run corpus:fetch      # re-vendor the pinned FastAPI docs (already committed)
 npm run sections          # list every section id
 npm run validate:golden   # check the golden set against the corpus
 npm test
 ```
 
-Nothing above needs configuration, and nothing above needs Postgres — the database arrives with the
-ingest chunk, along with the `docker compose` file to run it. There is no `.env` in a fresh checkout
-either: it is gitignored and no example is committed yet. The ingest/ask/eval chunk will introduce
-one and document it there; the variables it expects are `DATABASE_URL`, `AGENT_MODEL`,
-`JUDGE_MODEL`, and `OPENROUTER_API_KEY`.
+The corpus and golden-set commands need no database and no configuration — only the `db:*` commands
+do. `.env` is gitignored; `.env.example` is committed and holds the same defaults the scripts use
+when it is absent, so a fresh checkout works without it. `DATABASE_URL` and `OLLAMA_URL` are live
+today; `AGENT_MODEL`, `JUDGE_MODEL` and `OPENROUTER_API_KEY` arrive with the chunk that first needs
+a generating model.
 
 ## Roadmap
 
