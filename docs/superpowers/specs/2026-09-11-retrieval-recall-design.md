@@ -351,7 +351,12 @@ corrupt it, and the artifact already holds the durable record.
 - **Database-dependent tests skip, loudly.** `search.ts` needs Postgres. Its tests probe the
   connection once and, when it is unavailable, skip with `SKIPPED (no database at <url>)` visible in
   the output — never silently. When the database is up they run for real: insert three known vectors
-  into a temporary table, assert the ranking and the `id` tiebreaker, then clean up.
+  into the live `chunks` table inside a `BEGIN`/`ROLLBACK`, assert the ranking and the `id`
+  tiebreaker, and let the rollback undo them. The live table rather than a temporary one on purpose:
+  a temporary copy would exercise its own columns, not the real `vector(768)` column and the real
+  `model` filter that `topK` depends on — which is most of what there is to get wrong here. The
+  rollback is what makes that safe, and the fixtures are `test::`-prefixed, so a full suite run
+  leaves the table at exactly 944 rows / 944 embedded with no residue.
 - `provider.ts` gets no unit test. Its behaviour is the AI SDK's plus two string prefixes, and a test
   worth having would need Ollama. Its dimension assertion is exercised by `ingest` itself.
 
