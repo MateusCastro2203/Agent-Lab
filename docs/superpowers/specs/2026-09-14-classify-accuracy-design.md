@@ -250,3 +250,14 @@ feature.
 - **Whether the labels are the right labels.** Accuracy measures agreement with the golden set's
   `type` field. That the three-way split is the right way to route a question is an assumption this
   instrument inherits and cannot test.
+
+## Amendment — model pinned
+
+`AGENT_MODEL` is `qwen3:8b`, pinned on 2026-09-14 by `npm run smoke:classify`. It returned a schema-valid `{ label }` for one question of each of the three classes at `temperature: 0`. Smoke output:
+
+```
+  ok   schema-valid, agrees  <- How do I add a description that shows up next to an endpoint in the docs?
+  ok   schema-valid, agrees  <- Why does the framework validate the response as well as the request?
+  ok   schema-valid, says how_to, expected out_of_scope  <- How do I add a custom middleware in Express?
+PINNED: qwen3:8b returned a schema-valid label for all three classes.
+```
