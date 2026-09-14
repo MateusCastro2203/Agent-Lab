@@ -51,7 +51,7 @@ export function classifierWith(model: LanguageModel): Classifier {
       }
       const reason = last instanceof Error ? last.message : String(last);
       throw new ClassifyFailedError(
-        `Classification failed after 2 attempts for: ${question}\n  ${reason}`,
+        `Classification failed against ${ollamaUrl()} after 2 attempts for: ${question}\n  ${reason}`,
         { cause: last },
       );
     },
