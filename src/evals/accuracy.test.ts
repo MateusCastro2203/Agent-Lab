@@ -80,3 +80,13 @@ test("summarize reports min, median and max across runs", () => {
 test("summarize refuses an empty list", () => {
   assert.throws(() => summarize([]), /at least one run/);
 });
+
+test("summarize throws if a report lacks a perClass entry for a label", () => {
+  const report = scoreAccuracy(THIRTY, predict((r) => r.type));
+  // Remove the "concept" entry from perClass
+  const incomplete = {
+    ...report,
+    perClass: report.perClass.filter((c) => c.label !== "concept"),
+  };
+  assert.throws(() => summarize([incomplete]), /no perClass entry for label concept/);
+});

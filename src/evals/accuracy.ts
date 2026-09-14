@@ -87,9 +87,14 @@ export function summarize(reports: AccuracyReport[]): RunSummary {
 
   const perClass = {} as Record<GoldenType, Spread>;
   for (const label of GOLDEN_TYPES) {
-    perClass[label] = spread(
-      reports.map((r) => r.perClass.find((c) => c.label === label)?.accuracy ?? 0),
-    );
+    const accuracies = reports.map((r) => {
+      const found = r.perClass.find((c) => c.label === label);
+      if (found === undefined) {
+        throw new Error(`no perClass entry for label ${label}`);
+      }
+      return found.accuracy;
+    });
+    perClass[label] = spread(accuracies);
   }
 
   return {
