@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { loadGolden, normalizeQuestion, GOLDEN_TYPES } from "../evals/golden.ts";
-import { FEW_SHOT, renderSystem, promptHash } from "./prompt.ts";
+import { FEW_SHOT, SYSTEM_PROMPT, renderSystem, promptHash } from "./prompt.ts";
 
 function tokens(text: string): Set<string> {
   return new Set(normalizeQuestion(text).split(" ").filter((t) => t !== ""));
@@ -11,6 +11,22 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   let shared = 0;
   for (const t of a) if (b.has(t)) shared++;
   return shared / (a.size + b.size - shared);
+}
+
+// Adjacent word pairs, both longer than 3 characters. Short words ("is",
+// "not", "the") pair up by chance across unrelated text; this is a tripwire
+// for phrasing distinctive enough to matter.
+function bigrams(text: string): Set<string> {
+  const words = normalizeQuestion(text).split(" ").filter((t) => t !== "");
+  const pairs = new Set<string>();
+  for (let i = 0; i < words.length - 1; i++) {
+    const a = words[i];
+    const b = words[i + 1];
+    if (a !== undefined && b !== undefined && a.length > 3 && b.length > 3) {
+      pairs.add(`${a} ${b}`);
+    }
+  }
+  return pairs;
 }
 
 const golden = await loadGolden();
@@ -57,6 +73,36 @@ test("the system prompt carries every example and names every label", () => {
   const system = renderSystem();
   for (const example of FEW_SHOT) assert.ok(system.includes(example.question), example.question);
   for (const label of GOLDEN_TYPES) assert.ok(system.includes(label), label);
+});
+
+// The first leakage guard compared FEW_SHOT questions against golden
+// questions, which is the golden set's wording. It could not catch a leak in
+// the label definitions themselves, which live in SYSTEM_PROMPT and can echo
+// a golden `note` — where the ruler's reasoning lives — instead of a
+// question. The rule: the system prompt must not contain phrasing distinctive
+// to a single golden row's adjudication. A bigram shared with two or more
+// notes is ordinary English, not an answer key, so only a bigram that
+// appears in exactly one note is checked against the prompt.
+test("the system prompt names no phrasing distinctive to a single golden row", () => {
+  const systemBigrams = bigrams(SYSTEM_PROMPT);
+
+  const rowsByBigram = new Map<string, string[]>();
+  for (const row of golden) {
+    for (const pair of bigrams(row.note)) {
+      const rows = rowsByBigram.get(pair) ?? [];
+      rows.push(row.id);
+      rowsByBigram.set(pair, rows);
+    }
+  }
+
+  const offenders: string[] = [];
+  for (const [pair, rows] of rowsByBigram) {
+    if (rows.length === 1 && systemBigrams.has(pair)) {
+      offenders.push(`"${pair}" (${rows[0]})`);
+    }
+  }
+
+  assert.equal(offenders.length, 0, `distinctive phrasing leaked into the system prompt: ${offenders.join(", ")}`);
 });
 
 test("the prompt hash is stable and 64 hex characters", () => {
