@@ -42,9 +42,14 @@ try {
   }
 } catch (error) {
   if (error instanceof ClassifyFailedError || error instanceof EmbeddingFailedError) {
-    fail(error.message);
+    // Not fail(): process.exit() would skip the finally below and leave the
+    // Postgres client unclosed. Setting exitCode lets cleanup run and still
+    // exits non-zero.
+    console.error(error.message);
+    process.exitCode = 1;
+  } else {
+    throw error;
   }
-  throw error;
 } finally {
   await client.end();
 }
