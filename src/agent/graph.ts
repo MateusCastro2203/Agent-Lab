@@ -11,8 +11,8 @@ export type Retrieve = (question: string) => Promise<RetrievedSection[]>;
 
 export const AgentState = Annotation.Root({
   question: Annotation<string>,
-  label: Annotation<GoldenType | null>,
-  sections: Annotation<RetrievedSection[]>,
+  label: Annotation<GoldenType | null>({ reducer: (_, y) => y, default: () => null }),
+  sections: Annotation<RetrievedSection[]>({ reducer: (_, y) => y, default: () => [] }),
 });
 
 export type AgentStateType = typeof AgentState.State;
