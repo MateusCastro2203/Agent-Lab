@@ -1,0 +1,746 @@
+{
+  "timestamp": "2026-09-14T20:33:43.282Z",
+  "agentModel": "qwen3:8b",
+  "temperature": 0,
+  "fewShot": 6,
+  "promptHash": "c07e5b06f25f7a45fa3f9b08b178466c70fc33a3f589b269409e64a18230d4a3",
+  "runs": 3,
+  "summary": {
+    "runs": 3,
+    "overall": {
+      "min": 0.9,
+      "median": 0.9,
+      "max": 0.9
+    },
+    "perClass": {
+      "how_to": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "concept": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "out_of_scope": {
+        "min": 0.7,
+        "median": 0.7,
+        "max": 0.7
+      }
+    }
+  },
+  "reports": [
+    {
+      "accuracy": 0.9,
+      "correct": 27,
+      "total": 30,
+      "perClass": [
+        {
+          "label": "how_to",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "concept",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "out_of_scope",
+          "correct": 7,
+          "total": 10,
+          "accuracy": 0.7
+        }
+      ],
+      "rows": [
+        {
+          "id": "q001",
+          "question": "How do I make a query parameter optional?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q002",
+          "question": "How do I read a value out of the URL path?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q003",
+          "question": "How do I accept a JSON payload in a POST request?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q004",
+          "question": "How do I make an endpoint return 201 instead of 200?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q005",
+          "question": "How do I accept an uploaded file?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q006",
+          "question": "How do I read the fields of a submitted HTML form?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q007",
+          "question": "How do I set a cookie on the response?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q008",
+          "question": "How do I serve the app over HTTPS in production?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q009",
+          "question": "How do I give every endpoint access to the database without opening a connection in each one?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q010",
+          "question": "How do I write an automated test that calls one of my endpoints?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q011",
+          "question": "What is the difference between a path parameter and a query parameter?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q012",
+          "question": "Why does FastAPI care about type hints at all?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q013",
+          "question": "What changes about how a route runs if I declare it `async def`?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q014",
+          "question": "What kinds of work is FastAPI's dependency system meant to hold?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q015",
+          "question": "Besides the two built-in docs pages, what else can I do with the OpenAPI description FastAPI produces?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q016",
+          "question": "What does declaring a response model do that a return type annotation does not?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q017",
+          "question": "Why would I split routes into routers instead of putting them all on the app?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q018",
+          "question": "What does FastAPI actually do with a Pydantic model when a request arrives?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q019",
+          "question": "What are the limits of background tasks compared with a real task queue?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q020",
+          "question": "What can middleware see, and when does it run relative to my endpoint?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q021",
+          "question": "How do I define a foreign key on a Django model?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q022",
+          "question": "How do I register a blueprint in Flask?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q023",
+          "question": "How do I make SQLAlchemy eager-load a relationship in one query?",
+          "expected": "out_of_scope",
+          "predicted": "how_to",
+          "correct": false
+        },
+        {
+          "id": "q024",
+          "question": "How does Pydantic compile its validators in Rust?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q025",
+          "question": "What is the worst-case time complexity of quicksort?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q026",
+          "question": "How do I rebase my branch onto main without losing commits?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q027",
+          "question": "Which country won the 2018 football World Cup?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q028",
+          "question": "What changed in the FastAPI 0.100 release?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q029",
+          "question": "What is the complete list of keyword arguments `APIRouter()` accepts?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q030",
+          "question": "How do I submit a pull request to the FastAPI project?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "accuracy": 0.9,
+      "correct": 27,
+      "total": 30,
+      "perClass": [
+        {
+          "label": "how_to",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "concept",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "out_of_scope",
+          "correct": 7,
+          "total": 10,
+          "accuracy": 0.7
+        }
+      ],
+      "rows": [
+        {
+          "id": "q001",
+          "question": "How do I make a query parameter optional?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q002",
+          "question": "How do I read a value out of the URL path?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q003",
+          "question": "How do I accept a JSON payload in a POST request?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q004",
+          "question": "How do I make an endpoint return 201 instead of 200?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q005",
+          "question": "How do I accept an uploaded file?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q006",
+          "question": "How do I read the fields of a submitted HTML form?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q007",
+          "question": "How do I set a cookie on the response?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q008",
+          "question": "How do I serve the app over HTTPS in production?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q009",
+          "question": "How do I give every endpoint access to the database without opening a connection in each one?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q010",
+          "question": "How do I write an automated test that calls one of my endpoints?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q011",
+          "question": "What is the difference between a path parameter and a query parameter?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q012",
+          "question": "Why does FastAPI care about type hints at all?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q013",
+          "question": "What changes about how a route runs if I declare it `async def`?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q014",
+          "question": "What kinds of work is FastAPI's dependency system meant to hold?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q015",
+          "question": "Besides the two built-in docs pages, what else can I do with the OpenAPI description FastAPI produces?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q016",
+          "question": "What does declaring a response model do that a return type annotation does not?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q017",
+          "question": "Why would I split routes into routers instead of putting them all on the app?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q018",
+          "question": "What does FastAPI actually do with a Pydantic model when a request arrives?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q019",
+          "question": "What are the limits of background tasks compared with a real task queue?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q020",
+          "question": "What can middleware see, and when does it run relative to my endpoint?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q021",
+          "question": "How do I define a foreign key on a Django model?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q022",
+          "question": "How do I register a blueprint in Flask?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q023",
+          "question": "How do I make SQLAlchemy eager-load a relationship in one query?",
+          "expected": "out_of_scope",
+          "predicted": "how_to",
+          "correct": false
+        },
+        {
+          "id": "q024",
+          "question": "How does Pydantic compile its validators in Rust?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q025",
+          "question": "What is the worst-case time complexity of quicksort?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q026",
+          "question": "How do I rebase my branch onto main without losing commits?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q027",
+          "question": "Which country won the 2018 football World Cup?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q028",
+          "question": "What changed in the FastAPI 0.100 release?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q029",
+          "question": "What is the complete list of keyword arguments `APIRouter()` accepts?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q030",
+          "question": "How do I submit a pull request to the FastAPI project?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        }
+      ]
+    },
+    {
+      "accuracy": 0.9,
+      "correct": 27,
+      "total": 30,
+      "perClass": [
+        {
+          "label": "how_to",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "concept",
+          "correct": 10,
+          "total": 10,
+          "accuracy": 1
+        },
+        {
+          "label": "out_of_scope",
+          "correct": 7,
+          "total": 10,
+          "accuracy": 0.7
+        }
+      ],
+      "rows": [
+        {
+          "id": "q001",
+          "question": "How do I make a query parameter optional?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q002",
+          "question": "How do I read a value out of the URL path?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q003",
+          "question": "How do I accept a JSON payload in a POST request?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q004",
+          "question": "How do I make an endpoint return 201 instead of 200?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q005",
+          "question": "How do I accept an uploaded file?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q006",
+          "question": "How do I read the fields of a submitted HTML form?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q007",
+          "question": "How do I set a cookie on the response?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q008",
+          "question": "How do I serve the app over HTTPS in production?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q009",
+          "question": "How do I give every endpoint access to the database without opening a connection in each one?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q010",
+          "question": "How do I write an automated test that calls one of my endpoints?",
+          "expected": "how_to",
+          "predicted": "how_to",
+          "correct": true
+        },
+        {
+          "id": "q011",
+          "question": "What is the difference between a path parameter and a query parameter?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q012",
+          "question": "Why does FastAPI care about type hints at all?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q013",
+          "question": "What changes about how a route runs if I declare it `async def`?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q014",
+          "question": "What kinds of work is FastAPI's dependency system meant to hold?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q015",
+          "question": "Besides the two built-in docs pages, what else can I do with the OpenAPI description FastAPI produces?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q016",
+          "question": "What does declaring a response model do that a return type annotation does not?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q017",
+          "question": "Why would I split routes into routers instead of putting them all on the app?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q018",
+          "question": "What does FastAPI actually do with a Pydantic model when a request arrives?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q019",
+          "question": "What are the limits of background tasks compared with a real task queue?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q020",
+          "question": "What can middleware see, and when does it run relative to my endpoint?",
+          "expected": "concept",
+          "predicted": "concept",
+          "correct": true
+        },
+        {
+          "id": "q021",
+          "question": "How do I define a foreign key on a Django model?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q022",
+          "question": "How do I register a blueprint in Flask?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q023",
+          "question": "How do I make SQLAlchemy eager-load a relationship in one query?",
+          "expected": "out_of_scope",
+          "predicted": "how_to",
+          "correct": false
+        },
+        {
+          "id": "q024",
+          "question": "How does Pydantic compile its validators in Rust?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q025",
+          "question": "What is the worst-case time complexity of quicksort?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q026",
+          "question": "How do I rebase my branch onto main without losing commits?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q027",
+          "question": "Which country won the 2018 football World Cup?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q028",
+          "question": "What changed in the FastAPI 0.100 release?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        },
+        {
+          "id": "q029",
+          "question": "What is the complete list of keyword arguments `APIRouter()` accepts?",
+          "expected": "out_of_scope",
+          "predicted": "concept",
+          "correct": false
+        },
+        {
+          "id": "q030",
+          "question": "How do I submit a pull request to the FastAPI project?",
+          "expected": "out_of_scope",
+          "predicted": "out_of_scope",
+          "correct": true
+        }
+      ]
+    }
+  ]
+}

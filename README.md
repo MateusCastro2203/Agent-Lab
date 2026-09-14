@@ -53,7 +53,9 @@ Two limits of this instrument, stated up front so nobody over-reads a score.
 so a single row flipping moves it 5 percentage points, and its standard error is roughly 10pp.
 Classification accuracy has 30 rows and moves 3.3pp per row. A prompt change that "improves"
 recall@5 by 4pp has told you nothing; only differences of about 15pp or more are signal at this
-sample size. Reporting a number to one decimal place does not make it precise.
+sample size. Reporting a number to one decimal place does not make it precise. Classification
+accuracy has a second, measured noise source of comparable size: the `v1` row's own run-to-run
+spread, below.
 
 **Coverage is skewed to `tutorial/`, so a third of the corpus is only ever a distractor.** The 20
 in-scope rows name 24 gold sections, and they fall out by directory as `tutorial` 20, `advanced` 3,
@@ -82,19 +84,32 @@ contains the answer scores badly.
 | ------- | ----------------------- | -------- | ----- | ---- |
 | 2b (retrieval only) | – | 0.60 | nomic-embed-text | 2026-09-11 |
 | 2c (golden set repaired) | – | 0.65 | nomic-embed-text | 2026-09-11 |
-| v1      | 0.933 (0.867–0.933)     | 0.65     | qwen3:8b, 6-shot | 2026-09-14 |
+| v1 (prompt leaked the answer key) | 0.933 (0.867–0.933) | 0.65 | qwen3:8b, 6-shot | 2026-09-14 |
+| v1 (prompt corrected)   | 0.900 (0.900–0.900)     | 0.65     | qwen3:8b, 6-shot | 2026-09-14 |
 
-**The `v1` spread comes from three runs**, not a distribution: `temperature: 0` does not make a local
-model bit-reproducible, which is why the median (0.933) is reported beside a min of 0.867 rather than
-as a single point. Per class, median accuracy was `how_to` 100%, `concept` 100% (min 90%), and
-`out_of_scope` 80% (min 70%) — the weakest of the three. This number measures a model *and* a
-six-example prompt together, and this chunk cannot separate the two: only a later comparison, the
-same prompt against a second model or two prompts against one, can. And because each class has only
-ten rows, one row is 10pp — per-class differences smaller than about 20pp are not readable at this
-support.
+**The number moved from 0.933 to 0.900 because the prompt was corrected, not because the model or
+the retrieval changed.** The `out_of_scope` clause named release notes, the API reference, and
+contributing — one-to-one and in order, the golden set's own three "in-domain but outside the
+vendored slice" rows — so the first measurement partly reported the answer key, not the model. It
+was replaced with a boundary stated about the corpus (the four vendored directories) rather than
+about what is out. Removing an answer-key leak can only lower accuracy, never raise it, so the drop
+is the correction working, not the instrument degrading. Both artifacts stay in the table and on
+disk under `evals/results-classify/`, the same reason `2b` stays beside `2c`.
 
-**The two rows differ by the ruler, not by the retriever.** Nothing about embedding, chunking or
-search changed between them. The `0.60` was measured against a golden set with seven defective rows,
+**The leaked-prompt spread came from three runs**, not a distribution: `temperature: 0` does not make
+a local model bit-reproducible, which is why its median (0.933) is reported beside a min of 0.867
+rather than as a single point — a second, measured source of noise of comparable size to the 3.3pp
+sampling resolution above. The corrected prompt happened to land on exactly 0.900 (27/30) in all
+three runs. Per class under the corrected prompt, median accuracy was `how_to` 100%, `concept` 100%,
+and `out_of_scope` 70% (no spread across runs) — the weakest of the three, and `q029`, the API-
+reference question the old clause had named directly, is now among the rows it misses. This number
+measures a model *and* a six-example prompt together, and this chunk cannot separate the two: only a
+later comparison, the same prompt against a second model or two prompts against one, can. And because
+each class has only ten rows, one row is 10pp — per-class differences smaller than about 20pp are not
+readable at this support.
+
+**The `2b` and `2c` rows differ by the ruler, not by the retriever.** Nothing about embedding,
+chunking or search changed between them. The `0.60` was measured against a golden set with seven defective rows,
 found by auditing all twenty in-scope rows against authoring rules 5 and 6 (see the amendment in
 `docs/superpowers/specs/2026-09-10-golden-set-design.md`). It stays in the table because a baseline
 that is deleted is a baseline that can be quietly re-chosen later.
