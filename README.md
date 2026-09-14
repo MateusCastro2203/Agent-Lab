@@ -82,7 +82,16 @@ contains the answer scores badly.
 | ------- | ----------------------- | -------- | ----- | ---- |
 | 2b (retrieval only) | – | 0.60 | nomic-embed-text | 2026-09-11 |
 | 2c (golden set repaired) | – | 0.65 | nomic-embed-text | 2026-09-11 |
-| v1      | –                       | –        | –     | –    |
+| v1      | 0.933 (0.867–0.933)     | 0.65     | qwen3:8b, 6-shot | 2026-09-14 |
+
+**The `v1` spread comes from three runs**, not a distribution: `temperature: 0` does not make a local
+model bit-reproducible, which is why the median (0.933) is reported beside a min of 0.867 rather than
+as a single point. Per class, median accuracy was `how_to` 100%, `concept` 100% (min 90%), and
+`out_of_scope` 80% (min 70%) — the weakest of the three. This number measures a model *and* a
+six-example prompt together, and this chunk cannot separate the two: only a later comparison, the
+same prompt against a second model or two prompts against one, can. And because each class has only
+ten rows, one row is 10pp — per-class differences smaller than about 20pp are not readable at this
+support.
 
 **The two rows differ by the ruler, not by the retriever.** Nothing about embedding, chunking or
 search changed between them. The `0.60` was measured against a golden set with seven defective rows,
@@ -140,6 +149,9 @@ npm run db:check          # confirm extension, table, row counts, schema fingerp
 
 npm run ingest            # embed 944 chunks into pgvector (~40s, needs Ollama)
 npm run eval              # score recall@5 and write evals/results/<iso>.json
+npm run smoke:classify    # check the agent model can hold the three-label enum
+npm run eval:classify     # score classification accuracy, 3 runs, no database needed
+npm run ask               # ask the agent a question end to end
 
 npm run corpus:fetch      # re-vendor the pinned FastAPI docs (already committed)
 npm run sections          # list every section id
