@@ -10,7 +10,7 @@ export const SYSTEM_PROMPT = `You label one question about the FastAPI documenta
 
 how_to — asks for the steps or the syntax to accomplish a task.
 concept — asks what something is, why it exists, or how it behaves.
-out_of_scope — cannot be answered from the FastAPI documentation: it is about a different library or framework, about something unrelated to web APIs, or about a part of the FastAPI project that is not its documentation, such as release notes, the API reference, or how to contribute.
+out_of_scope — cannot be answered from the FastAPI documentation covered here, which is only the tutorial, the advanced user guide, the how-to guides, and deployment. It is about a different library or framework, about something unrelated to web APIs, or about any other part of FastAPI or its documentation that falls outside those four sections.
 
 Answer with the label only.`;
 
