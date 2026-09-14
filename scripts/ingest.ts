@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { connect, fail } from "../src/db/client.ts";
 import { enumerateChunks, type Chunk } from "../src/corpus/chunks.ts";
-import { EMBEDDING_MODEL, ollamaEmbedder } from "../src/embed/provider.ts";
+import { EMBEDDING_MODEL, EmbeddingFailedError, ollamaEmbedder } from "../src/embed/provider.ts";
 import { toVectorLiteral } from "../src/retrieve/search.ts";
 
 function hashText(text: string): string {
@@ -49,11 +49,16 @@ try {
   if (needed.length > 0) {
     const embedder = ollamaEmbedder();
     const BATCH = 64;
-    for (let i = 0; i < needed.length; i += BATCH) {
-      const group = needed.slice(i, i + BATCH);
-      const embedded = await embedder.embedDocuments(group.map((c) => c.text));
-      group.forEach((chunk, j) => vectors.set(chunk.id, embedded[j]!));
-      process.stderr.write(`\rembedded ${Math.min(i + BATCH, needed.length)}/${needed.length}`);
+    try {
+      for (let i = 0; i < needed.length; i += BATCH) {
+        const group = needed.slice(i, i + BATCH);
+        const embedded = await embedder.embedDocuments(group.map((c) => c.text));
+        group.forEach((chunk, j) => vectors.set(chunk.id, embedded[j]!));
+        process.stderr.write(`\rembedded ${Math.min(i + BATCH, needed.length)}/${needed.length}`);
+      }
+    } catch (error) {
+      if (error instanceof EmbeddingFailedError) fail(error.message);
+      throw error;
     }
     process.stderr.write("\n");
   }

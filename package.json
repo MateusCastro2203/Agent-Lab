@@ -15,7 +15,10 @@
     "eval": "node --env-file-if-exists=.env scripts/eval.ts",
     "corpus:fetch": "bash scripts/fetch-corpus.sh",
     "sections": "node scripts/list-sections.ts",
-    "validate:golden": "node scripts/validate-golden.ts --final"
+    "validate:golden": "node scripts/validate-golden.ts --final",
+    "smoke:classify": "node --env-file-if-exists=.env scripts/smoke-classify.ts",
+    "eval:classify": "node --env-file-if-exists=.env scripts/eval-classify.ts",
+    "ask": "node --env-file-if-exists=.env scripts/ask.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

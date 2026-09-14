@@ -250,3 +250,67 @@ feature.
 - **Whether the labels are the right labels.** Accuracy measures agreement with the golden set's
   `type` field. That the three-way split is the right way to route a question is an assumption this
   instrument inherits and cannot test.
+
+## Amendment — model pinned
+
+`AGENT_MODEL` is `qwen3:8b`, pinned on 2026-09-14 by `npm run smoke:classify`. It returned a schema-valid `{ label }` for one question of each of the three classes at `temperature: 0`. Smoke output:
+
+```
+  ok   schema-valid, agrees  <- How do I add a description that shows up next to an endpoint in the docs?
+  ok   schema-valid, agrees  <- Why does the framework validate the response as well as the request?
+  ok   schema-valid, says how_to, expected out_of_scope  <- How do I add a custom middleware in Express?
+PINNED: qwen3:8b returned a schema-valid label for all three classes.
+```
+
+## Amendment — the prompt leaked, and what the guards actually cover
+
+Found by the final whole-branch review, after the first measurement was already recorded.
+
+The `out_of_scope` definition in `SYSTEM_PROMPT` originally read "…not its documentation, **such as
+release notes, the API reference, or how to contribute**". Those three categories are, one to one and
+in order, the golden set's three *in-domain but outside the vendored slice* rows: `q028` release
+notes, `q029` API reference, `q030` contributing. The prompt stated a fact about the **answer key**.
+
+It was also wrong as a general rule — release notes and the API reference *are* FastAPI
+documentation, as those rows' own notes say. A false rule that produced right answers on exactly
+those rows.
+
+The clause now names the four vendored directories and says everything else is outside, including
+other parts of FastAPI's own documentation. That states a fact about the **corpus**, which is
+checkable without knowing any answer.
+
+**Removing it lowered the measured number, which is why it is not tuning.** The no-tuning rule
+exists to stop a better number being chased; this change could only produce a worse one. The
+anti-leakage rule is the one that reached it. Both measurements stay in the README, the way `2b`'s
+`0.60` was kept beside `2c`'s `0.65`.
+
+The correction also removed a source of *instability*: the three runs had been 28, 28 and 26 correct,
+and became 27, 27 and 27. The leaked clause was pushing borderline rows near the decision boundary,
+where they oscillated. The honest number is both lower and more reproducible.
+
+### Why rule 2 did not catch it
+
+The guard compared `FEW_SHOT` **questions** against golden **questions**. This leak was in the system
+prompt and matched the golden **notes** — where the adjudication reasoning lives. The mechanism
+covered one of the two places a prompt can leak, so the claim "mechanical test, not discipline" was
+only half true.
+
+A second guard now holds: **no bigram distinctive to exactly one golden `note` may appear in
+`SYSTEM_PROMPT`.** A bigram shared by two or more notes is ordinary English and is exempt; that
+exemption is what stops it firing on phrases like "question about".
+
+### What the guards still cannot see
+
+Recorded so nobody mistakes a tripwire for a guarantee:
+
+- **Paraphrase.** Matching is on adjacent word pairs. "notes about the release" evades a check that
+  catches "release notes". These guards catch copy-paste leaks, not semantic ones.
+- **Cross-row leaks.** Wording that two or more golden notes happen to share is exempted by design.
+  A clause naming two answer-key rows at once is indistinguishable, to this rule, from generic prose.
+- **Question text in the label definitions.** `SYSTEM_PROMPT` is checked against notes; `FEW_SHOT` is
+  checked against questions. A system prompt echoing a golden *question* falls between them.
+
+Each is a known hole, not an oversight. The first version of this guard was itself unsound: it
+compared the whole rendered prompt and fired on generic English, failing on `"question about"`/`q009`
+while never reaching `q028`. A guard that fails for the wrong reason is worse than none, because the
+failure looks like proof.
