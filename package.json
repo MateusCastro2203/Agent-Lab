@@ -23,6 +23,7 @@
     "typescript": "^5.9.0"
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.4.15",
     "ai": "^7.0.97",
     "ollama-ai-provider-v2": "^4.0.1",
     "pg": "^8.23.0",

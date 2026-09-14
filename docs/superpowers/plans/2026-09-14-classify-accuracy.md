@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Produce classification accuracy over the thirty golden rows — the lab's second number — through a pure `classify` function, a few-shot prompt whose examples are mechanically proven absent from the golden set, and `npm run eval:classify`.
+**Goal:** Produce classification accuracy over the thirty golden rows — the lab's second number — through a `classify` node, a few-shot prompt whose examples are mechanically proven absent from the golden set, a LangGraph graph that routes on the label, and `npm run eval:classify`.
 
-**Architecture:** No graph. `classify` is a function with an injectable language model, mirroring `embedderWith`/`ollamaEmbedder` from chunk 2b. Scoring is pure and separate from I/O, mirroring `scoreRecall`. The eval is its own script writing its own artifact directory, because it never touches the database while `npm run eval` refuses to run without one.
+**Architecture:** A LangGraph graph of two nodes and one conditional edge — `classify` routes in-scope questions to the existing `retrieve` and out-of-scope questions straight to the end. Nodes are plain functions, so the eval calls `classifyNode` directly with no graph runtime and no database, which is what keeps the two rulers independent. The classifier takes an injectable model and the graph takes injectable dependencies, mirroring `embedderWith`/`ollamaEmbedder` from chunk 2b. Scoring is pure and separate from I/O, mirroring `scoreRecall`.
 
-**Tech Stack:** Node 25 native TypeScript, `node:test`, AI SDK v7 (`ai@7.0.97`) with `generateObject`, `ollama-ai-provider-v2@4`, `zod@4`, Ollama on the host.
+**Tech Stack:** Node 25 native TypeScript, `node:test`, AI SDK v7 (`ai@7.0.97`) with `generateObject`, `@langchain/langgraph@1.4.15`, `ollama-ai-provider-v2@4`, `zod@4`, Ollama on the host, Postgres + pgvector for `npm run ask` only.
 
 **Spec:** `docs/superpowers/specs/2026-09-14-classify-accuracy-design.md`
 
@@ -18,7 +18,8 @@
 - Library modules **throw**; only `scripts/` may end the process.
 - Nothing in this plan touches `corpus/`, `evals/golden.jsonl`, `db/schema.sql`, `src/retrieve/`, `src/corpus/`, or `evals/results/`. `recall@5` is not re-run and not re-scored.
 - Import paths carry the explicit `.ts` extension. `verbatimModuleSyntax` and `noUncheckedIndexedAccess` are on: use `import type` for types, and index access yields `T | undefined`.
-- Every unit test runs without Ollama. The smoke test is a script, not a unit test.
+- Every unit test runs without Ollama **and without Postgres**, through injected dependencies. The smoke test is a script, not a unit test.
+- A LangGraph node is a plain `(state) => Partial<State>` function. Nothing may require the graph runtime to call one.
 - Commit messages end with the trailer block used throughout this repo.
 
 ---
@@ -37,8 +38,11 @@
 | `src/agent/classifier.test.ts` | Create. Stub-model tests |
 | `src/evals/accuracy.ts` | Create. `scoreAccuracy()` and `summarize()`, both pure |
 | `src/evals/accuracy.test.ts` | Create. Scoring tests |
+| `src/agent/graph.ts` | Create. `AgentState`, `makeClassifyNode`, `makeRetrieveNode`, `route`, `buildGraph` |
+| `src/agent/graph.test.ts` | Create. Routing tests against stubs — no Ollama, no Postgres |
 | `scripts/eval-classify.ts` | Create. Three runs, artifact, console report |
-| `package.json` | Modify. Two new scripts |
+| `scripts/ask.ts` | Create. Runs the graph once for one question |
+| `package.json` | Modify. Three new scripts |
 | `README.md` | Modify. The `v1` row |
 
 ---
@@ -620,7 +624,156 @@ git commit -m "feat: classify a question into the golden set's three labels"
 
 ---
 
-### Task 5: Scoring
+### Task 5: The graph and its conditional edge
+
+The routing test is the point of this task. A branch never seen failing to take is not known to branch.
+
+**Files:**
+- Create: `src/agent/graph.ts`
+- Test: `src/agent/graph.test.ts`
+
+**Interfaces:**
+- Consumes: `Classifier` from `src/agent/classifier.ts`; `GoldenType` from `src/evals/golden.ts`.
+- Produces: `AgentState`, `AgentStateType`, `RetrievedSection` (`{ id: string; score: number }`), `Retrieve` (`(question: string) => Promise<RetrievedSection[]>`), `makeClassifyNode(classifier): (state) => Promise<Partial<AgentStateType>>`, `makeRetrieveNode(retrieve)`, `route(state)`, `buildGraph({ classifier, retrieve })`.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+// src/agent/graph.test.ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import type { GoldenType } from "../evals/golden.ts";
+import type { Classifier } from "./classifier.ts";
+import { buildGraph, makeClassifyNode, type RetrievedSection } from "./graph.ts";
+
+function stubClassifier(label: GoldenType): Classifier {
+  return { model: "stub", classify: async () => label };
+}
+
+function stubRetrieve() {
+  const calls: string[] = [];
+  const retrieve = async (question: string): Promise<RetrievedSection[]> => {
+    calls.push(question);
+    return [{ id: "tutorial/query-params.md#optional-parameters", score: 0.81 }];
+  };
+  return { retrieve, calls };
+}
+
+// The load-bearing claim of this whole design: the eval calls this without a
+// graph runtime and without a database. If a node ever needs the runtime, the
+// two rulers become coupled.
+test("a node is callable on its own, with no graph and no database", async () => {
+  const node = makeClassifyNode(stubClassifier("concept"));
+  const out = await node({ question: "Why does this exist?", label: null, sections: [] });
+  assert.equal(out.label, "concept");
+});
+
+for (const label of ["how_to", "concept"] as const) {
+  test(`${label} routes to retrieve`, async () => {
+    const r = stubRetrieve();
+    const graph = buildGraph({ classifier: stubClassifier(label), retrieve: r.retrieve });
+    const out = await graph.invoke({ question: "How do I X?", label: null, sections: [] });
+    assert.deepEqual(r.calls, ["How do I X?"]);
+    assert.equal(out.sections.length, 1);
+    assert.equal(out.sections[0]!.id, "tutorial/query-params.md#optional-parameters");
+  });
+}
+
+// Asserted against a stub that records whether it was called at all. Checking
+// only that `sections` is empty would pass even if retrieve ran and returned
+// nothing.
+test("out_of_scope never reaches retrieve", async () => {
+  const r = stubRetrieve();
+  const graph = buildGraph({ classifier: stubClassifier("out_of_scope"), retrieve: r.retrieve });
+  const out = await graph.invoke({ question: "Who won in 2018?", label: null, sections: [] });
+  assert.deepEqual(r.calls, [], "retrieve was called for an out-of-scope question");
+  assert.deepEqual(out.sections, []);
+  assert.equal(out.label, "out_of_scope");
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `node --test src/agent/graph.test.ts`
+Expected: FAIL — cannot resolve `./graph.ts`.
+
+- [ ] **Step 3: Write `src/agent/graph.ts`**
+
+This shape was probed against `@langchain/langgraph@1.4.15` under Node 25 type stripping before the plan was written: it compiles under `tsc --noEmit`, runs under `node --test`, and the conditional edge was observed skipping `retrieve`.
+
+```ts
+// src/agent/graph.ts
+import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
+import type { GoldenType } from "../evals/golden.ts";
+import type { Classifier } from "./classifier.ts";
+
+export interface RetrievedSection {
+  id: string;
+  score: number;
+}
+
+export type Retrieve = (question: string) => Promise<RetrievedSection[]>;
+
+export const AgentState = Annotation.Root({
+  question: Annotation<string>,
+  label: Annotation<GoldenType | null>,
+  sections: Annotation<RetrievedSection[]>,
+});
+
+export type AgentStateType = typeof AgentState.State;
+
+// Returned as a plain function on purpose. scripts/eval-classify.ts calls this
+// directly, with no graph runtime and no database — which is what keeps the
+// classification ruler independent of the retrieval one.
+export function makeClassifyNode(classifier: Classifier) {
+  return async (state: AgentStateType): Promise<Partial<AgentStateType>> => ({
+    label: await classifier.classify(state.question),
+  });
+}
+
+export function makeRetrieveNode(retrieve: Retrieve) {
+  return async (state: AgentStateType): Promise<Partial<AgentStateType>> => ({
+    sections: await retrieve(state.question),
+  });
+}
+
+// The reason `classify` exists: a question the documentation cannot answer is
+// never retrieved for.
+export function route(state: AgentStateType): "retrieve" | typeof END {
+  return state.label === "out_of_scope" ? END : "retrieve";
+}
+
+// Dependencies are parameters so the routing test runs against stubs.
+export function buildGraph(deps: { classifier: Classifier; retrieve: Retrieve }) {
+  return new StateGraph(AgentState)
+    .addNode("classify", makeClassifyNode(deps.classifier))
+    .addNode("retrieve", makeRetrieveNode(deps.retrieve))
+    .addEdge(START, "classify")
+    .addConditionalEdges("classify", route, { retrieve: "retrieve", [END]: END })
+    .compile();
+}
+```
+
+- [ ] **Step 4: Run the tests**
+
+Run: `node --test src/agent/graph.test.ts && npx tsc --noEmit`
+Expected: 4 passing, typecheck clean.
+
+- [ ] **Step 5: Prove the branch is really a branch**
+
+Temporarily change `route` to `return "retrieve";` unconditionally and re-run.
+Expected: `out_of_scope never reaches retrieve` FAILS with `retrieve was called for an out-of-scope question`. Then **restore** `route` and confirm green. A conditional edge that was never seen not taken is not known to be conditional.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/agent/graph.ts src/agent/graph.test.ts package.json package-lock.json
+git commit -m "feat: route on the label instead of always retrieving"
+```
+
+---
+
+### Task 6: Scoring
 
 **Files:**
 - Create: `src/evals/accuracy.ts`
@@ -843,7 +996,7 @@ git commit -m "feat: score classification accuracy, overall and per class"
 
 ---
 
-### Task 6: `npm run eval:classify`
+### Task 7: `npm run eval:classify`
 
 **Files:**
 - Create: `scripts/eval-classify.ts`
@@ -851,7 +1004,7 @@ git commit -m "feat: score classification accuracy, overall and per class"
 - Create (by running): `evals/results-classify/<iso>.json`
 
 **Interfaces:**
-- Consumes: `loadGolden`, `validateGolden`, `enumerateSections`, `ollamaClassifier`, `AGENT_MODEL`, `TEMPERATURE`, `ClassifyFailedError`, `promptHash`, `FEW_SHOT`, `scoreAccuracy`, `summarize`, `fail`.
+- Consumes: `loadGolden`, `validateGolden`, `enumerateSections`, `ollamaClassifier`, `AGENT_MODEL`, `TEMPERATURE`, `ClassifyFailedError`, `makeClassifyNode`, `promptHash`, `FEW_SHOT`, `scoreAccuracy`, `summarize`, `fail`.
 - Produces: the artifact whose median feeds Task 7's README row.
 
 - [ ] **Step 1: Write the script**
@@ -865,6 +1018,7 @@ import type { GoldenType } from "../src/evals/golden.ts";
 import { validateGolden } from "../src/evals/validate.ts";
 import { enumerateSections } from "../src/corpus/sections.ts";
 import { AGENT_MODEL, TEMPERATURE, ClassifyFailedError, ollamaClassifier } from "../src/agent/classifier.ts";
+import { makeClassifyNode } from "../src/agent/graph.ts";
 import { FEW_SHOT, promptHash } from "../src/agent/prompt.ts";
 import { scoreAccuracy, summarize, type AccuracyReport } from "../src/evals/accuracy.ts";
 
@@ -884,14 +1038,21 @@ if (problems.length > 0) {
 }
 
 const hash = promptHash();
-const classifier = ollamaClassifier();
+// The graph node, called directly. No graph runtime, no database — this is the
+// property that lets the two rulers stay independent, exercised in production
+// code rather than only in a test.
+const classifyNode = makeClassifyNode(ollamaClassifier());
 const reports: AccuracyReport[] = [];
 
 for (let run = 1; run <= RUNS; run++) {
   const predictions = new Map<string, GoldenType>();
   for (const row of golden) {
     try {
-      predictions.set(row.id, await classifier.classify(row.question));
+      const { label } = await classifyNode({ question: row.question, label: null, sections: [] });
+      if (label === null || label === undefined) {
+        fail(`run ${run}, ${row.id}: the classify node returned no label`);
+      }
+      predictions.set(row.id, label);
     } catch (error) {
       if (error instanceof ClassifyFailedError) {
         fail(`run ${run}, ${row.id}: ${error.message}\n\nNo number is reported from a torn run.`);
@@ -980,13 +1141,113 @@ git commit -m "feat: measure classification accuracy over three runs"
 
 ---
 
-### Task 7: The `v1` row
+### Task 8: `npm run ask`
+
+A graph that nothing runs is scaffolding. This is the first thing in the project a person can use rather than measure.
+
+**Files:**
+- Create: `scripts/ask.ts`
+- Modify: `package.json`
+
+**Interfaces:**
+- Consumes: `buildGraph` from `src/agent/graph.ts`; `ollamaClassifier`, `AGENT_MODEL` from `src/agent/classifier.ts`; `topK` from `src/retrieve/search.ts`; `ollamaEmbedder`, `EMBEDDING_MODEL`, `EmbeddingFailedError` from `src/embed/provider.ts`; `connect` from `src/db/client.ts`; `fail` from `src/cli.ts`.
+
+- [ ] **Step 1: Write the script**
+
+```ts
+// scripts/ask.ts
+import { connect } from "../src/db/client.ts";
+import { fail } from "../src/cli.ts";
+import { EMBEDDING_MODEL, EmbeddingFailedError, ollamaEmbedder } from "../src/embed/provider.ts";
+import { topK } from "../src/retrieve/search.ts";
+import { AGENT_MODEL, ClassifyFailedError, ollamaClassifier } from "../src/agent/classifier.ts";
+import { buildGraph } from "../src/agent/graph.ts";
+
+const K = 5;
+
+const question = process.argv.slice(2).join(" ").trim();
+if (question === "") {
+  fail(`usage: npm run ask "How do I make a query parameter optional?"`);
+}
+
+const client = await connect();
+try {
+  const embedder = ollamaEmbedder();
+  const graph = buildGraph({
+    classifier: ollamaClassifier(),
+    retrieve: async (q) => {
+      const vector = await embedder.embedQuery(q);
+      const hits = await topK(client, vector, K, EMBEDDING_MODEL);
+      return hits.map((h) => ({ id: h.id, score: h.score }));
+    },
+  });
+
+  const state = await graph.invoke({ question, label: null, sections: [] });
+
+  console.log(`\n${question}`);
+  console.log(`  classify: ${state.label}`);
+
+  if (state.sections.length === 0) {
+    // Not an abstention message — the graph simply never routed to retrieve.
+    console.log(`  out of scope for this corpus, so nothing was retrieved.`);
+  } else {
+    console.log(`  top ${state.sections.length}:`);
+    for (const [i, section] of state.sections.entries()) {
+      console.log(`    ${i + 1}. ${section.score.toFixed(3)}  ${section.id}`);
+    }
+    console.log(`\n  This prints where the answer lives. It does not answer — that is chunk 4.`);
+  }
+} catch (error) {
+  if (error instanceof ClassifyFailedError || error instanceof EmbeddingFailedError) {
+    fail(error.message);
+  }
+  throw error;
+} finally {
+  await client.end();
+}
+```
+
+- [ ] **Step 2: Add the npm script**
+
+In `package.json`, inside `"scripts"`:
+
+```json
+"ask": "node --env-file-if-exists=.env scripts/ask.ts"
+```
+
+- [ ] **Step 3: Run it on an in-scope question**
+
+Requires Docker running with the corpus ingested.
+
+Run: `npm run ask "How do I make a query parameter optional?"`
+Expected: `classify: how_to`, then five sections with scores. `tutorial/query-params.md#optional-parameters` should be among them — it is `q001`'s gold and ranked first in the last recall run.
+
+- [ ] **Step 4: Run it on an out-of-scope question, and confirm the branch held**
+
+Run: `npm run ask "Which country won the 2018 football World Cup?"`
+Expected: `classify: out_of_scope` and the "nothing was retrieved" line — **no section list**. This is the conditional edge doing its job against a real model rather than a stub.
+
+- [ ] **Step 5: Confirm the usage guard**
+
+Run: `npm run ask`
+Expected: the usage line and exit code 1, with no database connection attempted.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add scripts/ask.ts package.json
+git commit -m "feat: npm run ask, so the graph is code that runs"
+```
+
+---
+
+### Task 9: The `v1` row
 
 **Files:**
 - Modify: `README.md`
 
 **Interfaces:**
-- Consumes: the artifact written by Task 6.
+- Consumes: the artifact written by Task 7.
 
 - [ ] **Step 1: Fill in the results table**
 
@@ -1024,8 +1285,10 @@ git commit -m "docs: record the v1 row with its run-to-run spread"
 
 ## Self-Review
 
-**Spec coverage.** Label set from `GOLDEN_TYPES` — Task 4. `AGENT_MODEL` constant pinned by smoke test plus spec amendment — Task 1. Six examples two per class — Task 3. Both leakage assertions with the `0.5` tripwire — Task 3. Accuracy overall and per class, pure, throwing on a bad denominator and a missing prediction — Task 5. Three runs with min/median/max and one prompt hash — Tasks 5 and 6. Artifact fields and the sibling directory — Task 6. Ollama unreachable and one-retry-then-abort — Tasks 2 and 4. No `process.exit` in a library module, including the `provider.ts` carry-over — Task 2. Tests without Ollama through an injectable model — Tasks 3, 4, 5. README `v1` row with the spread — Task 7.
+**Spec coverage.** Label set from `GOLDEN_TYPES` — Task 4. `AGENT_MODEL` constant pinned by smoke test plus spec amendment — Task 1. Six examples two per class — Task 3. Both leakage assertions with the `0.5` tripwire — Task 3. The graph, its conditional edge, and nodes as plain functions — Task 5. `npm run ask` — Task 8. Accuracy overall and per class, pure, throwing on a bad denominator and a missing prediction — Task 6. Three runs with min/median/max and one prompt hash — Tasks 6 and 7. Artifact fields and the sibling directory — Task 7. Ollama unreachable and one-retry-then-abort — Tasks 2 and 4. No `process.exit` in a library module, including the `provider.ts` carry-over — Task 2. Tests without Ollama or Postgres through injected dependencies — Tasks 3, 4, 5, 6. README `v1` row with the spread — Task 9.
 
-**Placeholders.** The only value not literal in this document is `AGENT_MODEL`, which Task 1 decides by a defined procedure and records in the spec before Task 4 hard-codes it; Task 4 Step 3 says so explicitly. The README numbers in Task 7 are marked as an example shape with the real numbers substituted from the artifact.
+**Placeholders.** The only value not literal in this document is `AGENT_MODEL`, which Task 1 decides by a defined procedure and records in the spec before Task 4 hard-codes it; Task 4 Step 3 says so explicitly. The README numbers in Task 9 are marked as an example shape with the real numbers substituted from the artifact.
 
-**Type consistency.** `GoldenType` and `GOLDEN_TYPES` are imported everywhere and declared nowhere. `Classifier.classify` returns `Promise<GoldenType>`, which is what `scoreAccuracy`'s `Map<string, GoldenType>` consumes. `summarize` takes `AccuracyReport[]`, which is what the run loop collects. `fail` moves to `src/cli.ts` in Task 2 and is imported from there by Task 6, while `db/client.ts` re-exports it so chunk 2b's call sites do not churn.
+**Type consistency.** `GoldenType` and `GOLDEN_TYPES` are imported everywhere and declared nowhere. `Classifier.classify` returns `Promise<GoldenType>`; `makeClassifyNode` wraps it and yields `Partial<AgentStateType>`, whose `label` is `GoldenType | null` — which is why Task 7 narrows the null before putting it in the `Map<string, GoldenType>` that `scoreAccuracy` consumes. `RetrievedSection` is `{ id, score }`, which is exactly what `topK` returns and what Task 8's `retrieve` maps to. `summarize` takes `AccuracyReport[]`, which is what the run loop collects. `fail` moves to `src/cli.ts` in Task 2 and is imported from there by Tasks 7 and 8, while `db/client.ts` re-exports it so chunk 2b's call sites do not churn.
+
+**Two guards are proven by being made to fail**, and neither task is complete without that observation: the anti-leakage test in Task 3 Step 5, and the conditional edge in Task 5 Step 5.

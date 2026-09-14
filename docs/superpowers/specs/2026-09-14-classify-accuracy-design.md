@@ -2,8 +2,12 @@
 
 **Date:** 2026-09-14
 **Status:** Approved, not yet implemented
-**Scope:** A `classify` function, a few-shot prompt with a mechanical anti-leakage guard, pure
-accuracy scoring, and `npm run eval:classify` — producing the second of the lab's two numbers.
+**Scope:** A `classify` node, a few-shot prompt with a mechanical anti-leakage guard, a LangGraph
+graph whose conditional edge routes on the label, `npm run ask`, and `npm run eval:classify` —
+producing the second of the lab's two numbers.
+
+**Revision:** rewritten 2026-09-14 after the LangGraph question was reopened. See *The graph* below
+for what changed and the evidence behind it.
 
 ## Why this comes now
 
@@ -22,20 +26,72 @@ prompt is the easiest place in the whole project to manufacture a good score by 
 | --- | --- | --- |
 | 2b (done) | ingest, retrieve, `npm run eval` | `recall@5` = 0.60 |
 | 2c (done) | golden set audited under authoring rules 5 and 6 | `recall@5` = 0.65 |
-| **3 (this one)** | `classify`, few-shot prompt, `npm run eval:classify` | **classification accuracy → the `v1` row** |
-| 4 | LangGraph graph, `answer` node with citations and abstention, run state persisted | none — unmeasured |
+| **3 (this one)** | `classify`, the graph and its conditional edge, `npm run ask`, `npm run eval:classify` | **classification accuracy → the `v1` row** |
+| 4 | `answer` node with citations and abstention, run state persisted, checkpointing | none — unmeasured |
 | later | tool calling, scored by exact match instead of adjudication | a third ruler |
 
 ## Decisions
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Graph | **No LangGraph.** `classify` is a pure function | The number does not depend on a graph. Chunk 4 has two nodes and run-state persistence — that is when typed state and checkpointing carry weight. Same discipline as shipping no ANN index |
+| Graph | **LangGraph, with a real conditional edge.** `classify` routes to `retrieve` or straight to the end | A one-node graph teaches the API and nothing else. Routing on the label is the thing `classify` exists for, and `retrieve` already exists and is already measured, so the branch costs no new machinery |
+| Node shape | Nodes are plain functions; the eval calls `classifyNode` directly | Keeps the separate ruler separate: the eval needs no graph runtime and no database, which is the property that made two scripts worth having |
 | Model | Local, 8B class, through Ollama, pinned as a constant | Free, offline, reproducible, no API key. The README already reserves OpenRouter for "when a stronger model is needed" |
 | Prompt | Few-shot, six examples, **authored fresh** | Chosen over zero-shot for label adherence. The cost is accepted explicitly: the first measurement mixes model capability with prompt quality |
 | Leakage | Mechanical test, not discipline | Chunk 2c found seven defective golden rows written under rules the author had written himself |
 | Ruler | **Separate** script and artifact directory | `recall@5` refuses to run without 944 embedded rows; `classify` never touches the database. Coupling them blocks one measurement on the other's preconditions |
 | Repetitions | **Three runs**, reporting min / median / max | Measures the instrument's own noise, which no other part of this project has measured |
+
+## The graph
+
+`classify` was first specified as a plain function with LangGraph deferred to chunk 4. That was
+right about one thing and wrong about another. It was right that a **one-node** graph is ceremony:
+you learn `StateGraph`, `addNode`, `compile` and `invoke`, and exercise no branching, no state
+threading, no checkpointing. It was wrong to assume chunk 3 must be one node. `retrieve` already
+exists, already has its own measured number, and routing to it is precisely what a label is *for*.
+
+So the graph is:
+
+```
+classify ──┬── how_to | concept ──→ retrieve ──→ END
+           └── out_of_scope ──────────────────→ END
+```
+
+Three nodes' worth of behaviour from two nodes and one conditional edge, built entirely from code
+that already exists.
+
+### Nodes are plain functions
+
+A LangGraph node is `(state) => Partial<State>`. Nothing about being a node prevents calling it
+directly, and `scripts/eval-classify.ts` does exactly that: it calls `classifyNode({ question })`
+with no graph runtime and no database. The separate-ruler property survives the graph unchanged —
+which is the whole reason this design is acceptable rather than a coupling.
+
+`buildGraph` takes its dependencies as parameters (`{ classifier, retrieve }`) so the routing test
+runs against stubs, with no Ollama and no Postgres.
+
+### `npm run ask`
+
+A graph that nothing runs is scaffolding. `npm run ask "<question>"` invokes it and prints the
+label, then the retrieved sections with their scores when the question is in scope. It generates no
+prose and cites nothing — that is chunk 4. It exists so the graph is load-bearing on the day it is
+written, and because it is the first thing in this project a person can *use* rather than measure.
+
+### Verified before being specified
+
+LangGraph was probed against this project's actual toolchain before this section was written, not
+assumed to work:
+
+| Claim | Result |
+| --- | --- |
+| Imports under Node 25 native type stripping, no build step | works |
+| `tsc --noEmit` with `verbatimModuleSyntax` and `noUncheckedIndexedAccess` | clean |
+| Runs under `node --test` | 3 of 3 passing |
+| A node is callable without a graph runtime | `classifyNode({…})` returned its label |
+| The conditional edge actually routes | out-of-scope finished with `sections: []`, never reaching `retrieve` |
+
+`@langchain/langgraph@1.4.15`, 20 packages, 26 MB. That weight is real and is accepted: the README
+names LangGraph in the stack, and this is the chunk where it stops being a promise.
 
 ## The label set has one source
 
@@ -156,24 +212,32 @@ contracts.
 
 ## Testing
 
-Every unit test runs without Ollama, through `classifierWith(stub)` — an injectable model, present
-from the start rather than retrofitted. Chunk 2b's final review found the embedding prefixes could
-be swapped with a green suite, and this is the shape that fixed it.
+Every unit test runs without Ollama and without Postgres, through injected dependencies —
+`classifierWith(stub)` for the model and `buildGraph({ classifier, retrieve })` for the graph. Both
+seams are present from the start rather than retrofitted. Chunk 2b's final review found the
+embedding prefixes could be swapped with a green suite, and this is the shape that fixed it.
 
 - `accuracy.test.ts` — a denominator that is not thirty throws; a missing prediction throws; per
   class counts; perfect, zero, and mixed cases.
 - `prompt.test.ts` — both leakage assertions, and that `FEW_SHOT` is balanced two per class.
 - `classifier.test.ts` — the question reaches the model; a valid label round-trips; a response
   outside the enum is rejected.
+- `graph.test.ts` — the node is callable on its own; each in-scope label reaches `retrieve`;
+  **`out_of_scope` never does**, asserted against a stub that records whether it was called at all.
+  A branch that is never seen failing to take is not known to branch.
 
 The smoke test against a real Ollama is a **script**, not a unit test — the same reasoning that left
 `provider.ts` without one in chunk 2b.
 
 ## Not in this chunk
 
-No LangGraph, no `answer` node, no citations, no abstention behaviour, no run-state persistence, no
-`npm run ask`, no tool calling, no second model compared, no change to `recall@5` or to the corpus,
-the golden set, or the database schema.
+No `answer` node, no generated prose, no citations, no abstention *message*, no run-state
+persistence, no checkpointing, no `interrupt()`, no tool calling, no second model compared, and no
+change to `recall@5` or to the corpus, the golden set, or the database schema.
+
+`npm run ask` prints the label and, for an in-scope question, the retrieved sections. It does not
+answer. Routing an out-of-scope question past `retrieve` is the graph's behaviour, not an abstention
+feature.
 
 ## What this chunk cannot tell you
 
