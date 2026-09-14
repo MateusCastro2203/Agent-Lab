@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { connect, fail } from "../src/db/client.ts";
-import { EMBEDDING_MODEL, ollamaEmbedder } from "../src/embed/provider.ts";
+import { EMBEDDING_MODEL, EmbeddingFailedError, ollamaEmbedder } from "../src/embed/provider.ts";
 import { topK } from "../src/retrieve/search.ts";
 import { loadGolden } from "../src/evals/golden.ts";
 import { validateGolden } from "../src/evals/validate.ts";
@@ -79,10 +79,15 @@ try {
 
   const embedder = ollamaEmbedder();
   const retrieved = new Map<string, string[]>();
-  for (const row of inScope) {
-    const vector = await embedder.embedQuery(row.question);
-    const hits = await topK(client, vector, RANK_DEPTH, EMBEDDING_MODEL);
-    retrieved.set(row.id, hits.map((h) => h.id));
+  try {
+    for (const row of inScope) {
+      const vector = await embedder.embedQuery(row.question);
+      const hits = await topK(client, vector, RANK_DEPTH, EMBEDDING_MODEL);
+      retrieved.set(row.id, hits.map((h) => h.id));
+    }
+  } catch (error) {
+    if (error instanceof EmbeddingFailedError) fail(error.message);
+    throw error;
   }
 
   const report = scoreRecall(golden, retrieved, K);

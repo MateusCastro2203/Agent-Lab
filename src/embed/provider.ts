@@ -47,17 +47,18 @@ export interface Embedder {
   embedQuery(text: string): Promise<number[]>;
 }
 
+export class EmbeddingFailedError extends Error {}
+
 function handleEmbedFailure(error: unknown): never {
   if (error instanceof DimensionMismatchError) throw error;
   const reason = error instanceof Error ? error.message : String(error);
-  console.error(
+  throw new EmbeddingFailedError(
     `Embedding failed against ${ollamaUrl()}\n` +
       `  ${reason}\n\n` +
       `If Ollama is not running, start it and make sure the model is pulled:\n` +
       `  ollama serve\n` +
       `  ollama pull ${EMBEDDING_MODEL}\n`,
   );
-  process.exit(1);
 }
 
 // The model is a parameter so the prefix seam is testable without Ollama: a

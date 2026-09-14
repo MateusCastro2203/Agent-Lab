@@ -1,4 +1,5 @@
 import { Client } from "pg";
+import { fail, describe } from "../cli.ts";
 
 const DEFAULT_URL = "postgres://agentlab:agentlab@localhost:5433/agentlab";
 
@@ -6,23 +7,11 @@ export function databaseUrl(): string {
   return process.env.DATABASE_URL ?? DEFAULT_URL;
 }
 
-export function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
-
-// Connecting to `localhost` tries IPv6 and IPv4, and the failure arrives as an
-// AggregateError whose own `message` is empty — the causes are in `.errors`.
-// Reading only `.message` printed a blank reason, so unwrap the aggregate.
-export function describe(error: unknown): string {
-  if (error instanceof AggregateError) {
-    const causes = error.errors.map(describe).filter((m) => m !== "");
-    const unique = [...new Set(causes)];
-    if (unique.length > 0) return unique.join("; ");
-  }
-  if (error instanceof Error && error.message !== "") return error.message;
-  return String(error);
-}
+// Re-exported, not just imported: scripts/eval.ts and scripts/ingest.ts
+// already import `fail` from here, and src/db/client.test.ts already imports
+// `describe` from here — re-exporting both keeps those import lines from
+// churning even though the implementations now live in ../cli.ts.
+export { fail, describe } from "../cli.ts";
 
 export async function connect(): Promise<Client> {
   const url = databaseUrl();
